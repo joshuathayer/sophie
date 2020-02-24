@@ -45,12 +45,12 @@ pub fn init_vm() -> VM<'static> {
 pub fn free_vm() {}
 
 pub fn interpret<'a>(vm: &mut VM<'a>,
-                     chunk: &'a crate::chunk::Chunk)
+                     source: &str)
                      -> InterpretResult {
-    vm.chunk = Some(chunk);
-    vm.ip = 0;
 
-    run(vm)
+    crate::compiler::compile(source);
+
+    InterpretResult::InterpretOk
 }
 
 fn run(vm: &mut VM) -> InterpretResult {
