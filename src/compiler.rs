@@ -11,7 +11,7 @@ pub fn compile(source: &str) {
             print!("    | ");
         }
 
-        println!("{:?} ->{}<-", token.typ, &source[token.start..token.start+token.length]);
+        println!("{:?} {}", token.typ, &source[token.start..token.start+token.length]);
 
         if token.typ == crate::scanner::TokenType::EOF { break ; }
     }

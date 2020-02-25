@@ -100,10 +100,30 @@ pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
                 make_token(TokenType::LESS, scanner)
             }
         },
-
+        "\"" => string(scanner, source),
         _   => error_token("Unexpected character.".to_string(), scanner)
     }
 
+}
+
+fn string<'a>(scanner: &mut Scanner, source: &'a str) -> Token {
+    loop {
+        if is_at_end(scanner, source) {
+            break;
+        }
+
+        let c = peek(scanner, source).chars().next().unwrap();
+
+        match c {
+            '"' => { advance(scanner, source); break; },
+            '\n' => scanner.line += 1,
+            _ => ()
+        }
+
+        advance(scanner, source);
+    }
+
+    make_token(TokenType::STRING, scanner)
 }
 
 fn skip_whitespace<'a>(scanner: &mut Scanner, source: &'a str) {
