@@ -21,7 +21,7 @@ pub enum TokenType {
     LESS, LESSEQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, NUMBER,
+    IDENTIFIER, STRING, NUMBER, KEYWORD,
 
     // Keywords.
     AND, CLASS, ELSE, FALSE,
@@ -131,9 +131,31 @@ pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
         '"' => string(scanner, source),
         '0'..='9' => number(scanner, source),
         'a'..='z' => identifier(scanner, source),
+        ':' => keyword(scanner, source),
         _   => error_token("Unexpected character.".to_string(), scanner)
     }
 
+}
+
+fn keyword(scanner: &mut Scanner, source: &str) -> Token {
+    advance(scanner, source); // move past ':'
+    scanner.start += 1;
+    loop {
+        if is_at_end(scanner, source) {
+            break;
+        }
+        let c = peek(scanner, source);
+        match c {
+            '0'..='9' => advance(scanner, source),
+            'a'..='z' => advance(scanner, source),
+            '_' => advance(scanner, source),
+            '-' => advance(scanner, source),
+            ':' => advance(scanner, source),
+            _ => break
+        };
+    }
+
+    make_token(TokenType::KEYWORD, scanner)
 }
 
 fn identifier(scanner: &mut Scanner, source: &str) -> Token {
