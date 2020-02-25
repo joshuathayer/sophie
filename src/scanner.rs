@@ -1,10 +1,16 @@
+use radix_trie::Trie;
+
 #[derive(Debug)]
 #[derive(PartialEq)]
+#[derive(Clone)]
+#[derive(Copy)]
 #[repr(u8)]
 pub enum TokenType {
     // Single-character tokens.
     LEFTPAREN, RIGHTPAREN,
     LEFTBRACE, RIGHTBRACE,
+    LEFTBRACKET, RIGHTBRACKET,
+    LEFTANGLEBRACKET, RIGHTANGLEBRACKET,
     COMMA, DOT, MINUS, PLUS,
     SEMICOLON, SLASH, STAR,
 
@@ -21,16 +27,32 @@ pub enum TokenType {
     AND, CLASS, ELSE, FALSE,
     FOR, FUN, IF, NIL, OR,
     PRINT, RETURN, SUPER, THIS,
-    TRUE, VAR, WHILE,
+    TRUE, VAR, WHILE, LET,
 
     ERROR,
     EOF
 }
 
-pub struct Scanner {
+fn init_token_trie() -> Trie<&'static str, TokenType> {
+    let mut trie = Trie::new();
+
+    trie.insert("and", TokenType::AND);
+    trie.insert("or", TokenType::AND);
+    trie.insert("false", TokenType::FALSE);
+    trie.insert("if", TokenType::IF);
+    trie.insert("let", TokenType::LET);
+    trie.insert("nil", TokenType::NIL);
+    trie.insert("print", TokenType::PRINT);
+    trie.insert("true", TokenType::TRUE);
+
+    trie
+}
+
+pub struct Scanner<'a> {
     pub line: u16,
     pub start: usize,
-    pub current: usize
+    pub current: usize,
+    pub tokens: Trie<&'a str, TokenType>
 }
 
 pub struct Token {
@@ -41,11 +63,13 @@ pub struct Token {
     pub error: Option<String>,
 }
 
- pub fn init_scanner() -> Scanner {
+pub fn init_scanner<'a>() -> Scanner<'a> {
+
     Scanner {
         line: 1,
         start: 0,
-        current: 0
+        current: 0,
+        tokens: init_token_trie(),
     }
 }
 
@@ -65,6 +89,10 @@ pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
         ')' => make_token(TokenType::RIGHTPAREN, scanner),
         '{' => make_token(TokenType::LEFTBRACE, scanner),
         '}' => make_token(TokenType::RIGHTBRACE, scanner),
+        '[' => make_token(TokenType::LEFTBRACKET, scanner),
+        ']' => make_token(TokenType::RIGHTBRACKET, scanner),
+        '>' => make_token(TokenType::LEFTANGLEBRACKET, scanner),
+        '<' => make_token(TokenType::RIGHTANGLEBRACKET, scanner),
         ';' => make_token(TokenType::SEMICOLON, scanner),
         ',' => make_token(TokenType::COMMA, scanner),
         '.' => make_token(TokenType::DOT, scanner),
@@ -102,9 +130,33 @@ pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
         },
         '"' => string(scanner, source),
         '0'..='9' => number(scanner, source),
+        'a'..='z' => identifier(scanner, source),
         _   => error_token("Unexpected character.".to_string(), scanner)
     }
 
+}
+
+fn identifier(scanner: &mut Scanner, source: &str) -> Token {
+
+    advance(scanner, source); // move past first symbol
+    loop {
+        if is_at_end(scanner, source) {
+            break;
+        }
+        let c = peek(scanner, source);
+        match c {
+            '0'..='9' => advance(scanner, source),
+            'a'..='z' => advance(scanner, source),
+            '_' => advance(scanner, source),
+            '-' => advance(scanner, source),
+            _ => break
+        };
+    }
+
+    match scanner.tokens.get(&source[scanner.start..scanner.current]) {
+        Some(token) => make_token(token.to_owned(), scanner),
+        None => make_token(TokenType::IDENTIFIER, scanner)
+    }
 }
 
 fn number(scanner: &mut Scanner, source: &str) -> Token {
@@ -181,7 +233,6 @@ fn peek(scanner: &Scanner, source: &str) -> char {
 fn peek_next(scanner: &Scanner, source: &str) -> char {
     source[scanner.current+1..].chars().next().unwrap()
 }
-
 
 fn char_match<'a>(expected: char, scanner: &mut Scanner, source: &'a str) -> bool {
     if is_at_end(scanner, source) {

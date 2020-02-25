@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn run_file(mut vm: &mut vm::VM, filename: &str) {
-    println!("{}", filename);
+
     let contents = fs::read_to_string(filename)
         .expect("Failed to read source");
 
