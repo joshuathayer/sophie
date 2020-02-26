@@ -268,7 +268,7 @@ fn char_match<'a>(expected: char, scanner: &mut Scanner, source: &'a str) -> boo
     true
 }
 
-fn advance<'a>(scanner: &mut Scanner, source: &'a str) -> char {
+pub fn advance<'a>(scanner: &mut Scanner, source: &'a str) -> char {
     scanner.current += 1;
     source[scanner.current - 1..].chars().next().unwrap()
 }

@@ -1,29 +1,29 @@
 extern crate num_derive;
 use num::{FromPrimitive};
 
-pub struct VM<'a> {
-    pub chunk: Option<&'a crate::chunk::Chunk>,
+pub struct VM {
+    pub chunk: Option<crate::chunk::Chunk>,
     pub ip: usize,
     pub stack: Vec<crate::value::Value>,
 }
 
 pub enum InterpretResult {
-    InterpretOk,
-    InterpretCompileError,
-    InterpretRuntimeError,
+    Ok,
+    CompileError,
+    RuntimeError,
 }
 
 
 macro_rules! read_byte {
     ($vm:expr) => {{
         $vm.ip += 1;
-        $vm.chunk.unwrap().code[$vm.ip - 1]
+        $vm.chunk.as_ref().unwrap().code[$vm.ip - 1]
     }};
 }
 
 macro_rules! read_constant {
     ($vm:expr) => {
-        $vm.chunk.unwrap().constants.values[read_byte!($vm) as usize]
+        $vm.chunk.as_ref().unwrap().constants.values[read_byte!($vm) as usize]
     };
 }
 
@@ -34,7 +34,7 @@ macro_rules! binary_op {
         $vm.stack.push(a $op b);
     }};
 }
-pub fn init_vm() -> VM<'static> {
+pub fn init_vm() -> VM {
     VM {
         chunk: None,
         ip: 0,
@@ -44,13 +44,18 @@ pub fn init_vm() -> VM<'static> {
 
 pub fn free_vm() {}
 
-pub fn interpret<'a>(vm: &mut VM<'a>,
-                     source: &str)
-                     -> InterpretResult {
+pub fn interpret(vm: &mut VM, source: &str) -> InterpretResult {
 
-    crate::compiler::compile(source);
+    let mut chunk = crate::chunk::init_chunk();
 
-    InterpretResult::InterpretOk
+    if !crate::compiler::compile(source, &mut chunk) {
+        return InterpretResult::CompileError
+    };
+
+    vm.chunk = Some(chunk);
+    vm.ip = 0;
+
+    run(vm)
 }
 
 fn run(vm: &mut VM) -> InterpretResult {
@@ -64,7 +69,7 @@ fn run(vm: &mut VM) -> InterpretResult {
             print!(" ]");
         }
         println!("");
-        crate::debug::disassemble_instruction(vm.chunk.unwrap(), vm.ip);
+        crate::debug::disassemble_instruction(&vm.chunk.as_ref().unwrap(), vm.ip);
 
         let instruction: Option<crate::chunk::Opcode> =
             crate::chunk::Opcode::from_u8(read_byte!(vm));
@@ -73,7 +78,7 @@ fn run(vm: &mut VM) -> InterpretResult {
             Some(crate::chunk::Opcode::OPRETURN) => {
                 crate::value::print_value(vm.stack.pop().unwrap());
                 println!();
-                return InterpretResult::InterpretOk},
+                return InterpretResult::Ok},
             Some(crate::chunk::Opcode::OPNEGATE) =>
                 if let Some(last) = vm.stack.last_mut() {
                     *last *= -1.0;
@@ -86,7 +91,7 @@ fn run(vm: &mut VM) -> InterpretResult {
                 let constant = read_constant!(vm);
                 vm.stack.push(constant);
             }
-            _ => return InterpretResult::InterpretCompileError,
+            _ => return InterpretResult::CompileError,
         }
 
     }
