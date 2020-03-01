@@ -1,4 +1,4 @@
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 pub enum Opcode {
     OPCONSTANT,

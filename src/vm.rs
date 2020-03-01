@@ -13,7 +13,6 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-
 macro_rules! read_byte {
     ($vm:expr) => {{
         $vm.ip += 1;
@@ -23,7 +22,11 @@ macro_rules! read_byte {
 
 macro_rules! read_constant {
     ($vm:expr) => {
-        $vm.chunk.as_ref().unwrap().constants.values[read_byte!($vm) as usize]
+        $vm.chunk.
+            as_ref()
+            .unwrap()
+            .constants
+            .values[read_byte!($vm) as usize]
     };
 }
 
