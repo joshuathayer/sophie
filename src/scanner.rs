@@ -6,6 +6,8 @@ use radix_trie::Trie;
 #[derive(Copy)]
 #[repr(u8)]
 pub enum TokenType {
+    NOOP,
+
     // Single-character tokens.
     LEFTPAREN, RIGHTPAREN,
     LEFTBRACE, RIGHTBRACE,
@@ -48,6 +50,7 @@ fn init_token_trie() -> Trie<&'static str, TokenType> {
     trie
 }
 
+#[derive(Debug)]
 pub struct Scanner<'a> {
     pub line: u16,
     pub start: usize,
@@ -55,6 +58,7 @@ pub struct Scanner<'a> {
     pub tokens: Trie<&'a str, TokenType>
 }
 
+#[derive(Debug)]
 pub struct Token {
     pub typ: TokenType,
     pub line: u16,

@@ -5,7 +5,7 @@ pub fn disassemble_chunk(ref ch: &crate::chunk::Chunk, name: &str) {
     println!("== {} ==", name);
     let mut offset: usize = 0;
 
-    while offset < ch.count {
+    while offset < ch.code.len() {
         offset = disassemble_instruction(ch, offset);
     }
 
