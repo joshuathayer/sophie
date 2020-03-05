@@ -7,7 +7,7 @@ pub struct Values {
 #[allow(dead_code)]
 pub fn init_values() -> Values {
     Values {
-        values: vec![0.0; 8],
+        values: vec![0.0; 0],
     }
 }
 

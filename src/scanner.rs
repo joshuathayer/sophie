@@ -4,6 +4,7 @@ use radix_trie::Trie;
 #[derive(PartialEq)]
 #[derive(Clone)]
 #[derive(Copy)]
+#[derive(FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 pub enum TokenType {
     NOOP,
@@ -27,9 +28,10 @@ pub enum TokenType {
 
     // Keywords.
     AND, CLASS, ELSE, FALSE,
-    FOR, FUN, IF, NIL, OR,
-    PRINT, RETURN, SUPER, THIS,
-    TRUE, VAR, WHILE, LET,
+    FOR, FUN, IF, NIL,
+    OR,  PRINT, RETURN, SUPER,
+    THIS, TRUE, VAR, WHILE,
+    LET,
 
     ERROR,
     EOF
@@ -95,8 +97,6 @@ pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
         '}' => make_token(TokenType::RIGHTBRACE, scanner),
         '[' => make_token(TokenType::LEFTBRACKET, scanner),
         ']' => make_token(TokenType::RIGHTBRACKET, scanner),
-        '>' => make_token(TokenType::LEFTANGLEBRACKET, scanner),
-        '<' => make_token(TokenType::RIGHTANGLEBRACKET, scanner),
         ';' => make_token(TokenType::SEMICOLON, scanner),
         ',' => make_token(TokenType::COMMA, scanner),
         '.' => make_token(TokenType::DOT, scanner),

@@ -18,8 +18,8 @@ pub struct Chunk {
 
 pub fn init_chunk() -> Chunk {
     Chunk {
-        code: vec![0; 8],
-        lines: vec![0; 8],
+        code: vec![0; 0],
+        lines: vec![0; 0],
         constants: crate::value::init_values(),
     }
 }
