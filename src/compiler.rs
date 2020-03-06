@@ -344,15 +344,18 @@ impl Generator {
         let start = token.start;
         let len = token.length;
         let d = f64::from_str(&source[start..start+len]).unwrap();
-        self.emit_constant(&mut chunk, token, d)
+        self.emit_constant(&mut chunk,
+                           token,
+                           &number_val!(d))
     }
 
     fn emit_constant(&mut self,
                      mut chunk: &mut crate::chunk::Chunk,
                      token: &crate::scanner::Token,
-                     val: crate::value::Value) {
+                     val: &crate::value::ValueType) {
 
-        let constant_ix = self.make_constant(&mut chunk, val);
+        let constant_ix = self.make_constant(&mut chunk,
+                                             val);
 
         self.emit_bytes(&mut chunk,
                         token,
@@ -362,8 +365,8 @@ impl Generator {
 
     fn make_constant(&self,
                      mut chunk: &mut crate::chunk::Chunk,
-                     val: crate::value::Value) -> u8 {
-        let id = chunk.add_constant(val);
+                     val: &crate::value::ValueType) -> u8 {
+        let id = chunk.add_constant(as_number!(*val));
         u8::try_from(id).unwrap()
     }
 
@@ -396,6 +399,4 @@ impl Generator {
         }
         println!(": {}", message);
     }
-
-
 }
