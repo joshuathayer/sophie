@@ -2,12 +2,15 @@
 #[repr(u8)]
 pub enum Opcode {
     OPCONSTANT,
-    OPNEGATE,
+    OPNEGATE, // unused...
     OPADD,
     OPSUBTRACT,
     OPMULTIPLY,
     OPDIVIDE,
     OPRETURN,
+    OPNIL,
+    OPTRUE,
+    OPFALSE
 }
 
 pub struct Chunk {

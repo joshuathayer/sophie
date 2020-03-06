@@ -34,7 +34,7 @@ macro_rules! number_val {
 macro_rules! as_bool {
     ($value:expr) => {{
         match $value {
-            crate::value::ValueType::BOOL(b) => &b,
+            crate::value::ValueType::BOOL(b) => b,
             _ => false
         }
     }}
@@ -100,5 +100,11 @@ impl Values {
 }
 
 pub fn print_value(value: &ValueType) {
-    print!("{}", as_number!(*value))
+    match value {
+        ValueType::NUMBER(n) => print!("{}", as_number!(*value)),
+        ValueType::NIL(()) => print!("nil"),
+        ValueType::BOOL(b) => if *b {print!("true")} else {print!("false")},
+        _ => print!("Unknown value!")
+    }
+
 }

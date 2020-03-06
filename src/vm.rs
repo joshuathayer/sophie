@@ -107,7 +107,14 @@ fn run(vm: &mut VM) -> InterpretResult {
             Some(crate::chunk::Opcode::OPCONSTANT) => {
                 let constant = read_constant!(vm);
                 vm.stack.push(crate::value::ValueType::NUMBER(constant));
-            }
+            },
+            Some(crate::chunk::Opcode::OPNIL) =>
+                vm.stack.push(crate::value::ValueType::NIL(())),
+            Some(crate::chunk::Opcode::OPTRUE) =>
+                vm.stack.push(crate::value::ValueType::BOOL(true)),
+            Some(crate::chunk::Opcode::OPFALSE) =>
+                vm.stack.push(crate::value::ValueType::BOOL(false)),
+
             _ => return InterpretResult::CompileError,
         }
 

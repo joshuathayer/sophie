@@ -31,6 +31,9 @@ pub fn disassemble_instruction(ref ch: &crate::chunk::Chunk, offset: usize) -> u
         Some(crate::chunk::Opcode::OPMULTIPLY) => simple_instruction("OP_MULTIPLY", offset),
         Some(crate::chunk::Opcode::OPDIVIDE) => simple_instruction("OP_DIVIDE", offset),
         Some(crate::chunk::Opcode::OPCONSTANT) => constant_instruction("OP_CONSTANT", ch, offset),
+        Some(crate::chunk::Opcode::OPTRUE) => simple_instruction("OP_TRUE",  offset),
+        Some(crate::chunk::Opcode::OPFALSE) => simple_instruction("OP_FALSE",  offset),
+        Some(crate::chunk::Opcode::OPNIL) => simple_instruction("OP_NIL",  offset),
 
         _ => simple_instruction("UNKNOWN OPCODE", offset),
     }

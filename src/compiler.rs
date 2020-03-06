@@ -91,8 +91,6 @@ fn ast_expression(parser: &mut ASTParser,
 
 pub fn ast_advance(parser: &mut ASTParser) {
     loop {
-        // "move" current to previous.
-        // mem::swap(&mut parser.previous, &mut parser.current);
 
         parser.current = Rc::new(
             Some(crate::scanner::scan_token(parser.scanner,
@@ -200,12 +198,17 @@ static token_fn: [Action; 47] = [
     Generator::noop, Generator::noop,
     Generator::noop, Generator::noop,
 
-    Generator::noop, Generator::noop, Generator::number, Generator::noop,
+    // Literals
+    Generator::noop, Generator::noop,
+    Generator::number, Generator::noop,
+    Generator::literal, Generator::literal,
+    Generator::literal,
 
+    // Keywords
+    Generator::noop, Generator::noop, Generator::noop,
+    Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop, Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop, Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop, Generator::noop, Generator::noop,
+    Generator::noop,  Generator::noop, Generator::noop,
     Generator::noop,
 
     Generator::noop,
@@ -273,6 +276,25 @@ impl Generator {
 
         f(self, &mut chunk, &token, source);
 
+    }
+
+    fn literal(&mut self,
+               mut chunk: &mut crate::chunk::Chunk,
+               token: &crate::scanner::Token,
+               source: &str) {
+        let byte = match token.typ {
+            crate::scanner::TokenType::NIL =>
+                crate::chunk::Opcode::OPNIL,
+            crate::scanner::TokenType::TRUE =>
+                crate::chunk::Opcode::OPTRUE,
+            crate::scanner::TokenType::FALSE =>
+                crate::chunk::Opcode::OPFALSE,
+            _ =>
+                return
+        };
+        self.emit_byte(chunk,
+                       token,
+                       crate::chunk::Opcode::to_u8(&byte).unwrap())
     }
 
     fn op(&mut self,

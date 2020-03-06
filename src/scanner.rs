@@ -24,13 +24,16 @@ pub enum TokenType {
     LESS, LESSEQUAL,
 
     // Literals.
-    IDENTIFIER, STRING, NUMBER, KEYWORD,
+    IDENTIFIER, STRING,
+    NUMBER, KEYWORD,
+    TRUE, FALSE,
+    NIL,
 
     // Keywords.
-    AND, CLASS, ELSE, FALSE,
-    FOR, FUN, IF, NIL,
+    AND, CLASS, ELSE,
+    FOR, FUN, IF,
     OR,  PRINT, RETURN, SUPER,
-    THIS, TRUE, VAR, WHILE,
+    THIS, VAR, WHILE,
     LET,
 
     ERROR,
