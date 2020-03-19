@@ -10,7 +10,13 @@ pub enum Opcode {
     OPRETURN,
     OPNIL,
     OPTRUE,
-    OPFALSE
+    OPFALSE,
+    OPNOT,
+    OPEQUAL,
+    OPLT,
+    OPGT,
+    OPLTE,
+    OPGTE
 }
 
 pub struct Chunk {

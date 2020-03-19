@@ -19,7 +19,7 @@ pub enum TokenType {
 
     // One or two character tokens.
     BANG, BANGEQUAL,
-    EQUAL, EQUALEQUAL,
+    EQUAL, EQUALEQUAL, // EQEQ not actually used
     GREATER, GREATEREQUAL,
     LESS, LESSEQUAL,
 
@@ -34,7 +34,7 @@ pub enum TokenType {
     FOR, FUN, IF,
     OR,  PRINT, RETURN, SUPER,
     THIS, VAR, WHILE,
-    LET,
+    LET, NOT,
 
     ERROR,
     EOF
@@ -51,6 +51,7 @@ fn init_token_trie() -> Trie<&'static str, TokenType> {
     trie.insert("nil", TokenType::NIL);
     trie.insert("print", TokenType::PRINT);
     trie.insert("true", TokenType::TRUE);
+    trie.insert("not", TokenType::NOT);
 
     trie
 }

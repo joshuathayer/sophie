@@ -4,7 +4,7 @@ pub type Value = f64;
 
 pub enum ValueType {
     BOOL(bool),
-    NIL(()),
+    NIL,
     NUMBER(f64),
 }
 
@@ -19,7 +19,7 @@ macro_rules! bool_val {
 #[macro_export]
 macro_rules! nil_val {
     () => {
-        crate::value::ValueType::NIL()
+        crate::value::ValueType::NIL
     };
 }
 
@@ -62,7 +62,7 @@ macro_rules! is_bool {
 macro_rules! is_nil {
     ($value:expr) => {{
         match $value {
-            crate::value::ValueType::NIL() => true,
+            crate::value::ValueType::NIL => true,
             _ => false
         }
     }}
@@ -102,7 +102,7 @@ impl Values {
 pub fn print_value(value: &ValueType) {
     match value {
         ValueType::NUMBER(n) => print!("{}", as_number!(*value)),
-        ValueType::NIL(()) => print!("nil"),
+        ValueType::NIL => print!("nil"),
         ValueType::BOOL(b) => if *b {print!("true")} else {print!("false")},
         _ => print!("Unknown value!")
     }

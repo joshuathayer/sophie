@@ -183,7 +183,7 @@ type Action = fn(&mut Generator,
                  &crate::scanner::Token,
                  &str);
 
-static token_fn: [Action; 47] = [
+static token_fn: [Action; 48] = [
     Generator::noop,
 
     Generator::noop, Generator::noop,
@@ -193,10 +193,10 @@ static token_fn: [Action; 47] = [
     Generator::noop, Generator::noop, Generator::op, Generator::op,
     Generator::noop, Generator::noop, Generator::op,
 
-    Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop,
+    Generator::noop, Generator::op,
+    Generator::op, Generator::op,
+    Generator::op, Generator::op,
+    Generator::op, Generator::op,
 
     // Literals
     Generator::noop, Generator::noop,
@@ -208,11 +208,11 @@ static token_fn: [Action; 47] = [
     Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop, Generator::noop,
-    Generator::noop,  Generator::noop, Generator::noop,
-    Generator::noop,
+    Generator::noop, Generator::noop, Generator::noop,
+    Generator::noop, Generator::op,
 
     Generator::noop,
-    Generator::noop,
+    Generator::noop
 ];
 
 impl Generator {
@@ -311,6 +311,18 @@ impl Generator {
                 crate::chunk::Opcode::OPMULTIPLY,
             crate::scanner::TokenType::SLASH =>
                 crate::chunk::Opcode::OPDIVIDE,
+            crate::scanner::TokenType::NOT =>
+                crate::chunk::Opcode::OPNOT,
+            crate::scanner::TokenType::EQUAL =>
+                crate::chunk::Opcode::OPEQUAL,
+            crate::scanner::TokenType::LESS =>
+                crate::chunk::Opcode::OPLT,
+            crate::scanner::TokenType::GREATER =>
+                crate::chunk::Opcode::OPGT,
+            crate::scanner::TokenType::LESSEQUAL =>
+                crate::chunk::Opcode::OPLTE,
+            crate::scanner::TokenType::GREATEREQUAL =>
+                crate::chunk::Opcode::OPGTE,
             _ =>
                 return
         };

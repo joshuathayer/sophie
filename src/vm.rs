@@ -36,10 +36,10 @@ macro_rules! read_constant {
     };
 }
 
-// for numbers
+
+// only numbers in binary ops
 macro_rules! binary_op {
-    ($vm:expr, $op:tt) => {{
-        // only numbers in binary ops
+    ($vm:expr, $op:tt, $as_val:tt) => {{
         if !(is_number!($vm.peek(0)) &&
              is_number!($vm.peek(1))) {
             runtime_error("Operands to binary ops must be numbers");
@@ -47,7 +47,7 @@ macro_rules! binary_op {
         }
         let b = $vm.stack.pop().unwrap();
         let a = $vm.stack.pop().unwrap();
-        $vm.stack.push(number_val!(as_number!(a) $op as_number!(b)));
+        $vm.stack.push($as_val!(as_number!(a) $op as_number!(b)));
     }};
 }
 
@@ -95,30 +95,71 @@ fn run(vm: &mut VM) -> InterpretResult {
             Some(crate::chunk::Opcode::OPRETURN) => {
                 crate::value::print_value(&vm.stack.pop().unwrap());
                 println!();
-                return InterpretResult::Ok},
-            // Some(crate::chunk::Opcode::OPNEGATE) =>
-            //     if let Some(last) = vm.stack.last_mut() {
-            //         *last *= -1.0;
-            //     },
-            Some(crate::chunk::Opcode::OPADD) => binary_op!(vm, +),
-            Some(crate::chunk::Opcode::OPSUBTRACT) => binary_op!(vm, -),
-            Some(crate::chunk::Opcode::OPMULTIPLY) => binary_op!(vm, *),
-            Some(crate::chunk::Opcode::OPDIVIDE) => binary_op!(vm, /),
+                return InterpretResult::Ok },
+            Some(crate::chunk::Opcode::OPADD) =>
+                binary_op!(vm, +, number_val),
+            Some(crate::chunk::Opcode::OPSUBTRACT) =>
+                binary_op!(vm, -, number_val),
+            Some(crate::chunk::Opcode::OPMULTIPLY) =>
+                binary_op!(vm, *, number_val),
+            Some(crate::chunk::Opcode::OPDIVIDE) =>
+                binary_op!(vm, /, number_val),
+            Some(crate::chunk::Opcode::OPLT) =>
+                binary_op!(vm, <, bool_val),
+            Some(crate::chunk::Opcode::OPGT) =>
+                binary_op!(vm, >, bool_val),
+            Some(crate::chunk::Opcode::OPLTE) =>
+                binary_op!(vm, <=, bool_val),
+            Some(crate::chunk::Opcode::OPGTE) =>
+                binary_op!(vm, >=, bool_val),
+            Some(crate::chunk::Opcode::OPNOT) => {
+                let v = &vm.stack.pop().unwrap();
+                vm.stack.push(
+                    crate::value::ValueType::BOOL(is_falsey(v))
+                )
+            },
             Some(crate::chunk::Opcode::OPCONSTANT) => {
                 let constant = read_constant!(vm);
                 vm.stack.push(crate::value::ValueType::NUMBER(constant));
             },
             Some(crate::chunk::Opcode::OPNIL) =>
-                vm.stack.push(crate::value::ValueType::NIL(())),
+                vm.stack.push(crate::value::ValueType::NIL),
             Some(crate::chunk::Opcode::OPTRUE) =>
                 vm.stack.push(crate::value::ValueType::BOOL(true)),
             Some(crate::chunk::Opcode::OPFALSE) =>
                 vm.stack.push(crate::value::ValueType::BOOL(false)),
+            Some(crate::chunk::Opcode::OPEQUAL) => {
+                let l = &vm.stack.pop().unwrap();
+                let r = &vm.stack.pop().unwrap();
+                vm.stack.push(
+                    crate::value::ValueType::BOOL(values_equal(l, r))
+                )
+            }
+
 
             _ => return InterpretResult::CompileError,
         }
 
     }
+}
+
+fn is_falsey(v: &crate::value::ValueType) -> bool {
+    is_nil!(*v) || (is_bool!(*v) && !(as_bool!(*v)))
+}
+
+fn values_equal(l: &crate::value::ValueType,
+                r: &crate::value::ValueType) -> bool {
+
+    match (l,r) {
+        (crate::value::ValueType::BOOL(lv),
+         crate::value::ValueType::BOOL(rv)) => { lv == rv },
+        (crate::value::ValueType::NIL,
+         crate::value::ValueType::NIL) => true,
+        (crate::value::ValueType::NUMBER(lv),
+         crate::value::ValueType::NUMBER(rv)) => { lv == rv },
+        (_,_) => false
+    }
+
 }
 
 fn runtime_error(msg: &str) {
