@@ -19,6 +19,8 @@ extern crate num_derive;
 
 fn main() {
 
+    println!("Size is {}", std::mem::size_of::<value::ValueType>());
+
     let args: Vec<String> = env::args().collect();
 
     let filename = &args[1];
@@ -28,7 +30,7 @@ fn main() {
     run_file(&mut vm, &filename);
 }
 
-fn run_file(mut vm: &mut vm::VM, filename: &str) {
+fn run_file(mut vm: &mut vm::VM<'static>, filename: &str) {
 
     let contents = fs::read_to_string(filename)
         .expect("Failed to read source");

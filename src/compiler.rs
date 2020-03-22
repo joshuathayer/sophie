@@ -140,12 +140,12 @@ pub fn compile(source: &str,
 
     // code -> AST
     let mut scanner = crate::scanner::init_scanner();
-    let mut ast_parser =  ASTParser{current: Rc::new(None),
-                                    // previous: Rc::new(None),
-                                    had_error: false,
-                                    panic_mode: false,
-                                    scanner: &mut scanner,
-                                    source: source};
+    let ast_parser =  ASTParser{current: Rc::new(None),
+                                // previous: Rc::new(None),
+                                had_error: false,
+                                panic_mode: false,
+                                scanner: &mut scanner,
+                                source: source};
     let mut ast = Arena::<Rc<Option<crate::scanner::Token>>>::new();
     let root_id = build_ast(ast_parser, &mut ast);
     let root = ast.get(root_id);
@@ -199,7 +199,7 @@ static token_fn: [Action; 48] = [
     Generator::op, Generator::op,
 
     // Literals
-    Generator::noop, Generator::noop,
+    Generator::noop, Generator::string,
     Generator::number, Generator::noop,
     Generator::literal, Generator::literal,
     Generator::literal,
@@ -279,9 +279,9 @@ impl Generator {
     }
 
     fn literal(&mut self,
-               mut chunk: &mut crate::chunk::Chunk,
+               chunk: &mut crate::chunk::Chunk,
                token: &crate::scanner::Token,
-               source: &str) {
+               _source: &str) {
         let byte = match token.typ {
             crate::scanner::TokenType::NIL =>
                 crate::chunk::Opcode::OPNIL,
@@ -298,9 +298,9 @@ impl Generator {
     }
 
     fn op(&mut self,
-          mut chunk: &mut crate::chunk::Chunk,
+          chunk: &mut crate::chunk::Chunk,
           token: &crate::scanner::Token,
-          source: &str) {
+          _source: &str) {
 
         let byte = match token.typ {
             crate::scanner::TokenType::PLUS =>
@@ -380,13 +380,31 @@ impl Generator {
         let d = f64::from_str(&source[start..start+len]).unwrap();
         self.emit_constant(&mut chunk,
                            token,
-                           &number_val!(d))
+                           number_val!(d))
     }
 
-    fn emit_constant(&mut self,
-                     mut chunk: &mut crate::chunk::Chunk,
+    fn string(&mut self,
+              mut chunk: &mut crate::chunk::Chunk,
+              token: &crate::scanner::Token,
+              source: &str) {
+
+        let start = token.start;
+        let len = token.length;
+        let s = source[start+1..start+len-1].to_owned();
+        println!("hi string: >{}<", s);
+
+        let sv = string_val!(&s);
+
+        self.emit_constant(&mut chunk,
+                           token,
+                           sv
+        )
+    }
+
+    fn emit_constant<'a>(&mut self,
+                     mut chunk: &mut crate::chunk::Chunk<'a>,
                      token: &crate::scanner::Token,
-                     val: &crate::value::ValueType) {
+                     val: crate::value::ValueType<'a>) {
 
         let constant_ix = self.make_constant(&mut chunk,
                                              val);
@@ -397,10 +415,20 @@ impl Generator {
                         constant_ix)
     }
 
-    fn make_constant(&self,
-                     mut chunk: &mut crate::chunk::Chunk,
-                     val: &crate::value::ValueType) -> u8 {
-        let id = chunk.add_constant(as_number!(*val));
+    fn make_constant<'a>(&self,
+                     chunk: &mut crate::chunk::Chunk<'a>,
+                     val: crate::value::ValueType<'a>) -> u8 {
+        let id = match val {
+            crate::value::ValueType::NUMBER(_) =>
+                //chunk.add_constant(as_number!(*val)),
+                chunk.add_constant(val),
+            crate::value::ValueType::STRING(_) =>
+                // chunk.add_constant(as_string!(*val)),
+                chunk.add_constant(val),
+            _ =>
+                chunk.add_constant(val),
+        };
+
         u8::try_from(id).unwrap()
     }
 

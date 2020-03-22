@@ -55,7 +55,9 @@ fn constant_instruction(name: &str,
                         offset: usize) -> usize {
     let constant: usize = chunk.code[offset + 1] as usize;
     print!("{:-16} {:4} ", name, constant);
-    crate::value::print_value(&number_val!(chunk.constants.values[constant]));
+
+    //crate::value::print_value(&number_val!(chunk.constants.values[constant]));
+    crate::value::print_value(&chunk.constants.values[constant]);
     println!("");
     offset + 2
 }

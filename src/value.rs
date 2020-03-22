@@ -1,11 +1,12 @@
 #[macro_use]
 
-pub type Value = f64;
-
-pub enum ValueType {
+// pub type Value = f64;
+#[derive(Debug, Copy, Clone)]
+pub enum ValueType<'a> {
     BOOL(bool),
     NIL,
     NUMBER(f64),
+    STRING(&'a String)
 }
 
 // rust vals -> sophie vals
@@ -30,6 +31,14 @@ macro_rules! number_val {
     };
 }
 
+#[macro_export]
+macro_rules! string_val {
+    ($value:expr) => {
+        crate::value::ValueType::STRING($value)
+    };
+}
+
+
 // -- sophie vals -> rust vals
 macro_rules! as_bool {
     ($value:expr) => {{
@@ -45,6 +54,15 @@ macro_rules! as_number {
         match $value {
             crate::value::ValueType::NUMBER(n) =>  n,
             _ => 0.0
+        }
+    }}
+}
+
+macro_rules! as_string {
+    ($value:expr) => {{
+        match $value {
+            crate::value::ValueType::STRING(n) =>  n,
+            _ => ""
         }
     }}
 }
@@ -78,22 +96,29 @@ macro_rules! is_number {
     }}
 }
 
+macro_rules! is_string {
+    ($value:expr) => {{
+        match $value {
+            crate::value::ValueType::STRING(_) => true,
+            _ => false
+        }
+    }}
+}
 
-
-pub struct Values {
-    pub values: Vec<Value>
+pub struct Values<'a> {
+    pub values: Vec<ValueType<'a>>
 }
 
 #[allow(dead_code)]
-pub fn init_values() -> Values {
+pub fn init_values<'a>() -> Values<'a> {
     Values {
-        values: vec![0.0; 0],
+        values: vec![],
     }
 }
 
 
-impl Values {
-    pub fn write_values(&mut self, value: Value) -> usize {
+impl<'a> Values<'a> {
+    pub fn write_values(&mut self, value: ValueType<'a>) -> usize {
         self.values.push(value);
         self.values.len() - 1
     }
@@ -101,9 +126,11 @@ impl Values {
 
 pub fn print_value(value: &ValueType) {
     match value {
-        ValueType::NUMBER(n) => print!("{}", as_number!(*value)),
+        ValueType::NUMBER(_) => print!("{}", as_number!(*value)),
         ValueType::NIL => print!("nil"),
-        ValueType::BOOL(b) => if *b {print!("true")} else {print!("false")},
+        ValueType::BOOL(b) =>
+            if *b {print!("true")} else {print!("false")},
+        ValueType::STRING(_) => print!("{}", as_string!(*value)),
         _ => print!("Unknown value!")
     }
 

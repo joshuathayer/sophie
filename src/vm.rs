@@ -1,10 +1,10 @@
 extern crate num_derive;
 use num::{FromPrimitive};
 
-pub struct VM {
-    pub chunk: Option<crate::chunk::Chunk>,
+pub struct VM<'a> {
+    pub chunk: Option<crate::chunk::Chunk<'a>>,
     pub ip: usize,
-    pub stack: Vec<crate::value::ValueType>,
+    pub stack: Vec<crate::value::ValueType<'a>>,
 }
 
 pub enum InterpretResult {
@@ -13,7 +13,7 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-impl<'a> VM {
+impl<'a> VM<'_> {
     pub fn peek(&'a self, ix: usize) -> &'a crate::value::ValueType {
         self.stack.get(self.stack.len()-(1 + ix)).unwrap()
     }
@@ -51,7 +51,7 @@ macro_rules! binary_op {
     }};
 }
 
-pub fn init_vm() -> VM {
+pub fn init_vm<'a>() -> VM<'a> {
     VM {
         chunk: None,
         ip: 0,
@@ -61,7 +61,7 @@ pub fn init_vm() -> VM {
 
 pub fn free_vm() {}
 
-pub fn interpret(vm: &mut VM, source: &str) -> InterpretResult {
+pub fn interpret(vm: &mut VM<'static>, source: &str) -> InterpretResult {
 
     let mut chunk = crate::chunk::init_chunk();
 
@@ -75,7 +75,7 @@ pub fn interpret(vm: &mut VM, source: &str) -> InterpretResult {
     run(vm)
 }
 
-fn run(vm: &mut VM) -> InterpretResult {
+fn run<'a>(vm: &mut VM<'static>) -> InterpretResult {
     loop {
 
         // debug
@@ -120,7 +120,8 @@ fn run(vm: &mut VM) -> InterpretResult {
             },
             Some(crate::chunk::Opcode::OPCONSTANT) => {
                 let constant = read_constant!(vm);
-                vm.stack.push(crate::value::ValueType::NUMBER(constant));
+                // vm.stack.push(crate::value::ValueType::NUMBER(constant));
+                vm.stack.push(constant);
             },
             Some(crate::chunk::Opcode::OPNIL) =>
                 vm.stack.push(crate::value::ValueType::NIL),
