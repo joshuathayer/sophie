@@ -57,7 +57,13 @@ fn constant_instruction(name: &str,
     print!("{:-16} {:4} ", name, constant);
 
     //crate::value::print_value(&number_val!(chunk.constants.values[constant]));
-    crate::value::print_value(&chunk.constants.values[constant]);
+    let vt = match &chunk.constants.values[constant] {
+        crate::value::ConstantType::NUMBER(n) =>
+            crate::value::ValueType::NUMBER(*n),
+        crate::value::ConstantType::STRING(s) =>
+            crate::value::ValueType::STRING(s)
+    };
+    crate::value::print_value(&vt);
     println!("");
     offset + 2
 }

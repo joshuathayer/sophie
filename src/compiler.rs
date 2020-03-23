@@ -1,14 +1,14 @@
 extern crate num_derive;
 use num::{ToPrimitive};
 
-use std::mem;
+// use std::mem;
 use std::str::FromStr;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use indextree::Arena;
 use indextree::Node;
 use indextree::NodeId;
-use indextree::Children;
+// use indextree::Children;
 
 macro_rules! opcode {
     ($op:tt) => {
@@ -378,9 +378,13 @@ impl Generator {
         let start = token.start;
         let len = token.length;
         let d = f64::from_str(&source[start..start+len]).unwrap();
+        let ct = crate::value::ConstantType::NUMBER(d);
+
         self.emit_constant(&mut chunk,
                            token,
-                           number_val!(d))
+                           ct
+                           //number_val!(&ct)
+        )
     }
 
     fn string(&mut self,
@@ -393,19 +397,23 @@ impl Generator {
         let s = source[start+1..start+len-1].to_owned();
         println!("hi string: >{}<", s);
 
-        let sv = string_val!(&s);
+
+        let ct = crate::value::ConstantType::STRING(s);
+
+        // let sv = string_val!(&ct);
 
         self.emit_constant(&mut chunk,
                            token,
-                           sv
+                           ct
         )
     }
 
-    fn emit_constant<'a>(&mut self,
-                     mut chunk: &mut crate::chunk::Chunk<'a>,
+    fn emit_constant(&mut self,
+                     mut chunk: &mut crate::chunk::Chunk,
                      token: &crate::scanner::Token,
-                     val: crate::value::ValueType<'a>) {
+                     val: crate::value::ConstantType) {
 
+        // moves val to chunk
         let constant_ix = self.make_constant(&mut chunk,
                                              val);
 
@@ -415,19 +423,20 @@ impl Generator {
                         constant_ix)
     }
 
-    fn make_constant<'a>(&self,
-                     chunk: &mut crate::chunk::Chunk<'a>,
-                     val: crate::value::ValueType<'a>) -> u8 {
-        let id = match val {
-            crate::value::ValueType::NUMBER(_) =>
-                //chunk.add_constant(as_number!(*val)),
-                chunk.add_constant(val),
-            crate::value::ValueType::STRING(_) =>
-                // chunk.add_constant(as_string!(*val)),
-                chunk.add_constant(val),
-            _ =>
-                chunk.add_constant(val),
-        };
+    fn make_constant(&self,
+                     chunk: &mut crate::chunk::Chunk,
+                     val: crate::value::ConstantType) -> u8 {
+        let id = chunk.add_constant(val);
+        // let id = match val {
+        //     crate::value::ValueType::NUMBER(_) =>
+        //         //chunk.add_constant(as_number!(*val)),
+        //         chunk.add_constant(val),
+        //     crate::value::ValueType::STRING(_) =>
+        //         // chunk.add_constant(as_string!(*val)),
+        //         chunk.add_constant(val),
+        //     _ =>
+        //         chunk.add_constant(val),
+        // };
 
         u8::try_from(id).unwrap()
     }

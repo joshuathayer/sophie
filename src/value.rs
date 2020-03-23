@@ -1,12 +1,19 @@
 #[macro_use]
 
-// pub type Value = f64;
-#[derive(Debug, Copy, Clone)]
+pub enum ConstantType {
+    NUMBER(f64),
+    STRING(String)
+}
+
 pub enum ValueType<'a> {
     BOOL(bool),
     NIL,
     NUMBER(f64),
     STRING(&'a String)
+}
+
+pub struct Values {
+    pub values: Vec<ConstantType>
 }
 
 // rust vals -> sophie vals
@@ -105,20 +112,17 @@ macro_rules! is_string {
     }}
 }
 
-pub struct Values<'a> {
-    pub values: Vec<ValueType<'a>>
-}
 
 #[allow(dead_code)]
-pub fn init_values<'a>() -> Values<'a> {
+pub fn init_values() -> Values {
     Values {
         values: vec![],
     }
 }
 
 
-impl<'a> Values<'a> {
-    pub fn write_values(&mut self, value: ValueType<'a>) -> usize {
+impl Values {
+    pub fn write_values(&mut self, value: ConstantType) -> usize {
         self.values.push(value);
         self.values.len() - 1
     }
@@ -130,8 +134,7 @@ pub fn print_value(value: &ValueType) {
         ValueType::NIL => print!("nil"),
         ValueType::BOOL(b) =>
             if *b {print!("true")} else {print!("false")},
-        ValueType::STRING(_) => print!("{}", as_string!(*value)),
-        _ => print!("Unknown value!")
+        ValueType::STRING(_) => print!("{}", as_string!(*value))
     }
 
 }

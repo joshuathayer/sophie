@@ -19,23 +19,34 @@ extern crate num_derive;
 
 fn main() {
 
-    println!("Size is {}", std::mem::size_of::<value::ValueType>());
-
     let args: Vec<String> = env::args().collect();
 
     let filename = &args[1];
 
-    let mut vm = crate::vm::init_vm();
+    // let vm = crate::vm::init_vm();
 
-    run_file(&mut vm, &filename);
+    //let mut vm = crate::vm::VM {
+    //    chunk: Some(crate::chunk::init_chunk()),
+    //    ip: 0,
+    //    stack: Vec::new(),
+    //};
+
+    run_file(&filename);
 }
 
-fn run_file(mut vm: &mut vm::VM<'static>, filename: &str) {
+fn run_file<'a>(filename: &str) {
+
+    let mut vm = crate::vm::VM {
+        chunk: Some(crate::chunk::init_chunk()),
+        ip: 0,
+        stack: Vec::new(),
+    };
+
 
     let contents = fs::read_to_string(filename)
         .expect("Failed to read source");
 
-    let result: vm::InterpretResult = crate::vm::interpret(&mut vm, &contents);
+    let _result: vm::InterpretResult = vm.interpret(&contents);
 
     // if (result == INTERPRET_COMPILE_ERROR) exit(65);
     // if (result == INTERPRET_RUNTIME_ERROR) exit(70);
