@@ -34,7 +34,7 @@ pub enum TokenType {
     FOR, FUN, IF,
     OR,  PRINT, RETURN, SUPER,
     THIS, VAR, WHILE,
-    LET, NOT,
+    LET, NOT, LEN,
 
     ERROR,
     EOF
@@ -52,6 +52,7 @@ fn init_token_trie() -> Trie<&'static str, TokenType> {
     trie.insert("print", TokenType::PRINT);
     trie.insert("true", TokenType::TRUE);
     trie.insert("not", TokenType::NOT);
+    trie.insert("len", TokenType::LEN);
 
     trie
 }

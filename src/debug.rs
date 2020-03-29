@@ -40,6 +40,7 @@ pub fn disassemble_instruction(ref ch: &crate::chunk::Chunk, offset: usize) -> u
         Some(crate::chunk::Opcode::OPLTE) => simple_instruction("OP_LTE",  offset),
         Some(crate::chunk::Opcode::OPGT) => simple_instruction("OP_GT",  offset),
         Some(crate::chunk::Opcode::OPGTE) => simple_instruction("OP_GTE",  offset),
+        Some(crate::chunk::Opcode::OPLEN) => simple_instruction("OP_LEN",  offset),
 
         _ => simple_instruction("UNKNOWN OPCODE", offset),
     }
@@ -56,13 +57,14 @@ fn constant_instruction(name: &str,
     let constant: usize = chunk.code[offset + 1] as usize;
     print!("{:-16} {:4} ", name, constant);
 
-    //crate::value::print_value(&number_val!(chunk.constants.values[constant]));
+    // print_value needs a value, not a constant
     let vt = match &chunk.constants.values[constant] {
         crate::value::ConstantType::NUMBER(n) =>
             crate::value::ValueType::NUMBER(*n),
         crate::value::ConstantType::STRING(s) =>
             crate::value::ValueType::STRING(s)
     };
+
     crate::value::print_value(&vt);
     println!("");
     offset + 2

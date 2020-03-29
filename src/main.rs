@@ -25,23 +25,22 @@ fn main() {
 
     // let vm = crate::vm::init_vm();
 
-    //let mut vm = crate::vm::VM {
+    // let mut vm = crate::vm::VM {
     //    chunk: Some(crate::chunk::init_chunk()),
     //    ip: 0,
     //    stack: Vec::new(),
-    //};
+    // };
 
-    run_file(&filename);
+   run_file(&filename);
 }
 
 fn run_file<'a>(filename: &str) {
 
     let mut vm = crate::vm::VM {
-        chunk: Some(crate::chunk::init_chunk()),
-        ip: 0,
-        stack: Vec::new(),
+       chunk: Some(crate::chunk::init_chunk()),
+       ip: 0,
+       stack: Vec::new(),
     };
-
 
     let contents = fs::read_to_string(filename)
         .expect("Failed to read source");

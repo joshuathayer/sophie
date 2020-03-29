@@ -183,7 +183,7 @@ type Action = fn(&mut Generator,
                  &crate::scanner::Token,
                  &str);
 
-static token_fn: [Action; 48] = [
+static token_fn: [Action; 49] = [
     Generator::noop,
 
     Generator::noop, Generator::noop,
@@ -209,7 +209,7 @@ static token_fn: [Action; 48] = [
     Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop,
-    Generator::noop, Generator::op,
+    Generator::noop, Generator::op, Generator::op,
 
     Generator::noop,
     Generator::noop
@@ -323,6 +323,9 @@ impl Generator {
                 crate::chunk::Opcode::OPLTE,
             crate::scanner::TokenType::GREATEREQUAL =>
                 crate::chunk::Opcode::OPGTE,
+            crate::scanner::TokenType::LEN =>
+                crate::chunk::Opcode::OPLEN,
+
             _ =>
                 return
         };
@@ -426,6 +429,7 @@ impl Generator {
     fn make_constant(&self,
                      chunk: &mut crate::chunk::Chunk,
                      val: crate::value::ConstantType) -> u8 {
+
         let id = chunk.add_constant(val);
         // let id = match val {
         //     crate::value::ValueType::NUMBER(_) =>

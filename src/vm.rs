@@ -36,7 +36,6 @@ macro_rules! read_constant {
     };
 }
 
-
 // only numbers in binary ops
 macro_rules! binary_op {
     ($vm:expr, $op:tt, $as_val:tt) => {{
@@ -121,7 +120,7 @@ impl<'a> VM<'a> {
                 },
                 Some(crate::chunk::Opcode::OPCONSTANT) => {
 
-                    // We borrow the ConstantType from the chunk.
+                    // We borrow the ConstantType from our Chunk...
                     let constant = &self
                         .chunk
                         .as_ref()
@@ -130,8 +129,7 @@ impl<'a> VM<'a> {
                         .values[read_byte!(self) as usize];
 
                     // Make a new ValueType, which points to the value
-                    // in the ConstantType. Push that onto the chunk's
-                    // stack.
+                    // in the ConstantType. Push that onto our stack.
                     self.stack.push(
                         match constant {
                             crate::value::ConstantType::NUMBER(n) =>
@@ -141,8 +139,6 @@ impl<'a> VM<'a> {
                         }
                     );
 
-                    // and push that ValueType onto the stack
-                    // vm.stack.push(vt);
                 },
                 Some(crate::chunk::Opcode::OPNIL) =>
                     self.stack.push(crate::value::ValueType::NIL),
@@ -158,6 +154,19 @@ impl<'a> VM<'a> {
                     )
                 }
 
+                Some(crate::chunk::Opcode::OPLEN) => {
+
+                    let v = match self.stack.pop().unwrap() {
+                        crate::value::ValueType::STRING(s) => {
+                            crate::value::ValueType::NUMBER(s.len() as f64)
+                        },
+                        _ => {
+                            crate::value::ValueType::NIL
+                        }
+                    };
+
+                    self.stack.push(v)
+                }
                 _ => return InterpretResult::CompileError,
             }
 

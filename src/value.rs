@@ -112,14 +112,12 @@ macro_rules! is_string {
     }}
 }
 
-
 #[allow(dead_code)]
 pub fn init_values() -> Values {
     Values {
         values: vec![],
     }
 }
-
 
 impl Values {
     pub fn write_values(&mut self, value: ConstantType) -> usize {
