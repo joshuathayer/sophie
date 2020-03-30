@@ -1,14 +1,12 @@
 extern crate num_derive;
 use num::{ToPrimitive};
 
-// use std::mem;
 use std::str::FromStr;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use indextree::Arena;
 use indextree::Node;
 use indextree::NodeId;
-// use indextree::Children;
 
 macro_rules! opcode {
     ($op:tt) => {
@@ -19,7 +17,6 @@ macro_rules! opcode {
 #[derive(Debug)]
 pub struct Generator {
     pub current: Rc<Option<crate::scanner::Token>>,
-    // pub previous: Rc<Option<crate::scanner::Token>>,
     pub had_error: bool,
     pub panic_mode: bool,
 }
@@ -27,7 +24,6 @@ pub struct Generator {
 fn init_generator() -> Generator {
     Generator {
         current: Rc::new(None),
-        // previous: Rc::new(None),
         had_error: false,
         panic_mode: false,
     }
@@ -36,7 +32,6 @@ fn init_generator() -> Generator {
 #[derive(Debug)]
 pub struct ASTParser<'a> {
     pub current: Rc<Option<crate::scanner::Token>>,
-    // pub previous: Rc<Option<crate::scanner::Token>>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scanner: &'a mut crate::scanner::Scanner<'a>,
@@ -141,7 +136,6 @@ pub fn compile(source: &str,
     // code -> AST
     let mut scanner = crate::scanner::init_scanner();
     let ast_parser =  ASTParser{current: Rc::new(None),
-                                // previous: Rc::new(None),
                                 had_error: false,
                                 panic_mode: false,
                                 scanner: &mut scanner,
@@ -264,6 +258,7 @@ impl Generator {
                 self.expression(ast, first_child, &mut chunk, source);
             }
         }
+
         ()
     }
 
@@ -385,9 +380,7 @@ impl Generator {
 
         self.emit_constant(&mut chunk,
                            token,
-                           ct
-                           //number_val!(&ct)
-        )
+                           ct)
     }
 
     fn string(&mut self,
@@ -398,17 +391,13 @@ impl Generator {
         let start = token.start;
         let len = token.length;
         let s = source[start+1..start+len-1].to_owned();
-        println!("hi string: >{}<", s);
-
-
-        let ct = crate::value::ConstantType::STRING(s);
 
         // let sv = string_val!(&ct);
+        let ct = crate::value::ConstantType::STRING(s);
 
         self.emit_constant(&mut chunk,
                            token,
-                           ct
-        )
+                           ct)
     }
 
     fn emit_constant(&mut self,

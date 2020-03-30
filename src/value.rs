@@ -103,14 +103,14 @@ macro_rules! is_number {
     }}
 }
 
-macro_rules! is_string {
-    ($value:expr) => {{
-        match $value {
-            crate::value::ValueType::STRING(_) => true,
-            _ => false
-        }
-    }}
-}
+// macro_rules! is_string {
+//     ($value:expr) => {{
+//         match $value {
+//             crate::value::ValueType::STRING(_) => true,
+//             _ => false
+//         }
+//     }}
+// }
 
 #[allow(dead_code)]
 pub fn init_values() -> Values {

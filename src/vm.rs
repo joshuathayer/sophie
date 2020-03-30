@@ -2,7 +2,7 @@ extern crate num_derive;
 use num::{FromPrimitive};
 
 pub struct VM<'a> {
-    pub chunk: Option<crate::chunk::Chunk>,
+    // pub chunk: Option<crate::chunk::Chunk>,
     pub ip: usize,
     pub stack: Vec<crate::value::ValueType<'a>>,
 }
@@ -20,21 +20,19 @@ impl<'a> VM<'a> {
 }
 
 macro_rules! read_byte {
-    ($vm:expr) => {{
+    ($vm:expr, $chunk:expr) => {{
         $vm.ip += 1;
-        $vm.chunk.as_ref().unwrap().code[$vm.ip - 1]
+        $chunk.code[$vm.ip - 1]
     }};
 }
 
-macro_rules! read_constant {
-    ($vm:expr) => {
-        &$vm.chunk
-            .as_ref()
-            .unwrap()
-            .constants
-            .values[read_byte!($vm) as usize]
-    };
-}
+// macro_rules! read_constant {
+//     ($vm:expr, $chunk:expr) => {
+//         &$chunk
+//             .constants
+//             .values[read_byte!($vm, $chunk) as usize]
+//     };
+// }
 
 // only numbers in binary ops
 macro_rules! binary_op {
@@ -52,7 +50,7 @@ macro_rules! binary_op {
 
 pub fn init_vm<'a>() -> VM<'a> {
     VM {
-        chunk: Some(crate::chunk::init_chunk()),
+        // chunk: Some(crate::chunk::init_chunk()),
         ip: 0,
         stack: Vec::new(),
     }
@@ -61,19 +59,23 @@ pub fn init_vm<'a>() -> VM<'a> {
 pub fn free_vm() {}
 
 impl<'a> VM<'a> {
-    pub fn interpret(&'a mut self, source: &str) -> InterpretResult {
-        let mut chunk = self.chunk.as_mut().unwrap();
-
-        if !crate::compiler::compile(source, &mut chunk) {
+    pub fn interpret(&'a mut self,
+                     source: &str,
+                     chunk: &'a mut crate::chunk::Chunk) -> InterpretResult {
+        if !crate::compiler::compile(source, chunk) {
             return InterpretResult::CompileError
         };
 
         self.ip = 0;
 
-        self.run()
+        self.run(chunk)
     }
 
-    fn run(&'a mut self) -> InterpretResult {
+    // we move chunk to run, borrow stuff from within it, but then
+    // when run finishes, chunk gets cleaned up and we're no longer
+    // able to ref wiithin it.
+    // so... pass a ref to chunk?
+    fn run(&'a mut self, chunk: &'a mut crate::chunk::Chunk) -> InterpretResult {
         loop {
             // debug
             print!("        ");
@@ -85,11 +87,14 @@ impl<'a> VM<'a> {
             println!("");
 
             crate::debug::disassemble_instruction(
-                &self.chunk.as_ref().unwrap(),
+                // &self.chunk.as_ref().unwrap(),
+                &chunk,
                 self.ip);
 
             let instruction: Option<crate::chunk::Opcode> =
-                crate::chunk::Opcode::from_u8(read_byte!(self));
+                crate::chunk::Opcode::from_u8(
+                    read_byte!(self, chunk)
+                );
 
             match instruction {
                 Some(crate::chunk::Opcode::OPRETURN) => {
@@ -120,13 +125,12 @@ impl<'a> VM<'a> {
                 },
                 Some(crate::chunk::Opcode::OPCONSTANT) => {
 
-                    // We borrow the ConstantType from our Chunk...
-                    let constant = &self
-                        .chunk
-                        .as_ref()
-                        .unwrap()
+
+                    //let constant = read_constant!(self, chunk);
+                    // borrow a ConstantType from chunk
+                    let constant = &chunk
                         .constants
-                        .values[read_byte!(self) as usize];
+                        .values[read_byte!(self, chunk) as usize];
 
                     // Make a new ValueType, which points to the value
                     // in the ConstantType. Push that onto our stack.
@@ -135,7 +139,7 @@ impl<'a> VM<'a> {
                             crate::value::ConstantType::NUMBER(n) =>
                                 crate::value::ValueType::NUMBER(*n),
                             crate::value::ConstantType::STRING(s) =>
-                                crate::value::ValueType::STRING(s)
+                                crate::value::ValueType::STRING(&s)
                         }
                     );
 
@@ -172,6 +176,7 @@ impl<'a> VM<'a> {
 
         }
     }
+    // chunk.constants.values dropped here while still borrowed...
 }
 
 fn is_falsey(v: &crate::value::ValueType) -> bool {

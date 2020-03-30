@@ -24,29 +24,26 @@ fn main() {
     let filename = &args[1];
 
     // let vm = crate::vm::init_vm();
-
-    // let mut vm = crate::vm::VM {
-    //    chunk: Some(crate::chunk::init_chunk()),
-    //    ip: 0,
-    //    stack: Vec::new(),
-    // };
-
-   run_file(&filename);
-}
-
-fn run_file<'a>(filename: &str) {
+    let mut chunk = crate::chunk::init_chunk();
 
     let mut vm = crate::vm::VM {
-       chunk: Some(crate::chunk::init_chunk()),
        ip: 0,
        stack: Vec::new(),
     };
 
+    let _res = run_file(&filename, &mut vm, &mut chunk);
+    // res
+}
+
+fn run_file<'a>(filename: &'a str,
+                vm: &'a mut crate::vm::VM<'a>,
+                chunk: &'a mut crate::chunk::Chunk)  {
+
     let contents = fs::read_to_string(filename)
         .expect("Failed to read source");
 
-    let _result: vm::InterpretResult = vm.interpret(&contents);
+    vm.interpret(&contents, chunk);
 
-    // if (result == INTERPRET_COMPILE_ERROR) exit(65);
-    // if (result == INTERPRET_RUNTIME_ERROR) exit(70);
+    //if (result == INTERPRET_COMPILE_ERROR) exit(65);
+    //if (result == INTERPRET_RUNTIME_ERROR) exit(70);
 }
