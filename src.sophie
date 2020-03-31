@@ -1,1 +1,2 @@
+(print (+ 1 2)) 
 (+ 10 (len "once in a while you can get shown the light, in the strangest of places if you look at it right"))

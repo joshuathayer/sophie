@@ -5,6 +5,7 @@ pub enum ConstantType {
     STRING(String)
 }
 
+#[derive(Debug)]
 pub enum ValueType<'a> {
     BOOL(bool),
     NIL,

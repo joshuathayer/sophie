@@ -166,6 +166,7 @@ pub fn compile(source: &str,
                                length: 0,
                                error: None},
                            &mut chunk);
+
     // !parser.had_error
 
     true
@@ -201,7 +202,7 @@ static token_fn: [Action; 49] = [
     // Keywords
     Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop,
-    Generator::noop, Generator::noop, Generator::noop, Generator::noop,
+    Generator::noop, Generator::op, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::op, Generator::op,
 
@@ -320,6 +321,8 @@ impl Generator {
                 crate::chunk::Opcode::OPGTE,
             crate::scanner::TokenType::LEN =>
                 crate::chunk::Opcode::OPLEN,
+            crate::scanner::TokenType::PRINT =>
+                crate::chunk::Opcode::OPPRINT,
 
             _ =>
                 return

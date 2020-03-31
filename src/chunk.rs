@@ -17,7 +17,8 @@ pub enum Opcode {
     OPGT,
     OPLTE,
     OPGTE,
-    OPLEN
+    OPLEN,
+    OPPRINT,
 }
 
 pub struct Chunk {

@@ -171,6 +171,15 @@ impl<'a> VM<'a> {
 
                     self.stack.push(v)
                 }
+
+                Some(crate::chunk::Opcode::OPPRINT) => {
+                    let v = &self.stack.pop().unwrap();
+                    print!("printing: {:?}", v);
+                    self.stack.push(
+                        crate::value::ValueType::NIL
+                    )
+                }
+
                 _ => return InterpretResult::CompileError,
             }
 
