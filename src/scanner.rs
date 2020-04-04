@@ -25,7 +25,7 @@ pub enum TokenType {
 
     // Literals.
     IDENTIFIER, STRING,
-    NUMBER, KEYWORD,
+    FLOAT, INT, KEYWORD,
     TRUE, FALSE,
     NIL,
 
@@ -191,6 +191,8 @@ fn identifier(scanner: &mut Scanner, source: &str) -> Token {
 }
 
 fn number(scanner: &mut Scanner, source: &str) -> Token {
+    let mut has_point = false;
+
     loop {
         if is_at_end(scanner, source) {
             break;
@@ -201,6 +203,7 @@ fn number(scanner: &mut Scanner, source: &str) -> Token {
             '0'..='9' => (), // continue if it's a digit...
             '.' => match peek_next(scanner, source) {
                 '0'..='9' => {
+                    has_point = true;
                     advance(scanner, source); // continue if it's a digit after a '.'
                 },
                 _ => break                             // otherwise we're done
@@ -211,7 +214,11 @@ fn number(scanner: &mut Scanner, source: &str) -> Token {
         advance(scanner, source);
     }
 
-    make_token(TokenType::NUMBER, scanner)
+    if (has_point) {
+        make_token(TokenType::FLOAT, scanner)
+    } else {
+        make_token(TokenType::INT, scanner)
+    }
 }
 
 fn string<'a>(scanner: &mut Scanner, source: &'a str) -> Token {

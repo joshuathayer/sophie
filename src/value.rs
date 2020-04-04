@@ -1,7 +1,8 @@
 #[macro_use]
 
 pub enum ConstantType {
-    NUMBER(f64),
+    INT(i64),
+    FLOAT(f64),
     STRING(String)
 }
 
@@ -9,7 +10,8 @@ pub enum ConstantType {
 pub enum ValueType<'a> {
     BOOL(bool),
     NIL,
-    NUMBER(f64),
+    FLOAT(f64),
+    INT(i64),
     STRING(&'a String)
 }
 
@@ -33,9 +35,16 @@ macro_rules! nil_val {
 }
 
 #[macro_export]
-macro_rules! number_val {
+macro_rules! float_val {
     ($value:expr) => {
-        crate::value::ValueType::NUMBER($value)
+        crate::value::ValueType::FLOAT($value)
+    };
+}
+
+#[macro_export]
+macro_rules! int_val {
+    ($value:expr) => {
+        crate::value::ValueType::INT($value)
     };
 }
 
@@ -57,11 +66,20 @@ macro_rules! as_bool {
     }}
 }
 
-macro_rules! as_number {
+macro_rules! as_float {
     ($value:expr) => {{
         match $value {
-            crate::value::ValueType::NUMBER(n) =>  n,
+            crate::value::ValueType::FLOAT(n) =>  n,
             _ => 0.0
+        }
+    }}
+}
+
+macro_rules! as_int {
+    ($value:expr) => {{
+        match $value {
+            crate::value::ValueType::INT(n) =>  n,
+            _ => 0
         }
     }}
 }
@@ -95,14 +113,24 @@ macro_rules! is_nil {
 }
 
 
-macro_rules! is_number {
+macro_rules! is_float {
     ($value:expr) => {{
         match $value {
-            crate::value::ValueType::NUMBER(_) => true,
+            crate::value::ValueType::FLOAT(_) => true,
             _ => false
         }
     }}
 }
+
+macro_rules! is_int {
+    ($value:expr) => {{
+        match $value {
+            crate::value::ValueType::INT(_) => true,
+            _ => false
+        }
+    }}
+}
+
 
 // macro_rules! is_string {
 //     ($value:expr) => {{
@@ -129,7 +157,8 @@ impl Values {
 
 pub fn print_value(value: &ValueType) {
     match value {
-        ValueType::NUMBER(_) => print!("{}", as_number!(*value)),
+        ValueType::FLOAT(_) => print!("{}", as_float!(*value)),
+        ValueType::INT(_) => print!("{}", as_int!(*value)),
         ValueType::NIL => print!("nil"),
         ValueType::BOOL(b) =>
             if *b {print!("true")} else {print!("false")},

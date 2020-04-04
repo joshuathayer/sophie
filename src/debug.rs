@@ -59,8 +59,10 @@ fn constant_instruction(name: &str,
 
     // print_value needs a value, not a constant
     let vt = match &chunk.constants.values[constant] {
-        crate::value::ConstantType::NUMBER(n) =>
-            crate::value::ValueType::NUMBER(*n),
+        crate::value::ConstantType::INT(n) =>
+            crate::value::ValueType::INT(*n),
+        crate::value::ConstantType::FLOAT(n) =>
+            crate::value::ValueType::FLOAT(*n),
         crate::value::ConstantType::STRING(s) =>
             crate::value::ValueType::STRING(s)
     };

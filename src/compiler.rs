@@ -178,7 +178,7 @@ type Action = fn(&mut Generator,
                  &crate::scanner::Token,
                  &str);
 
-static token_fn: [Action; 49] = [
+static token_fn: [Action; 50] = [
     Generator::noop,
 
     Generator::noop, Generator::noop,
@@ -195,7 +195,7 @@ static token_fn: [Action; 49] = [
 
     // Literals
     Generator::noop, Generator::string,
-    Generator::number, Generator::noop,
+    Generator::float, Generator::int, Generator::noop,
     Generator::literal, Generator::literal,
     Generator::literal,
 
@@ -256,6 +256,11 @@ impl Generator {
                     }
                 }
 
+                // if our VM is to support variadic ops, we'd want
+                // to push the count of operands here
+
+
+                // finally, push on the operator
                 self.expression(ast, first_child, &mut chunk, source);
             }
         }
@@ -372,14 +377,28 @@ impl Generator {
         ()
     }
 
-    fn number(&mut self,
+    fn float(&mut self,
               mut chunk: &mut crate::chunk::Chunk,
               token: &crate::scanner::Token,
               source: &str) {
         let start = token.start;
         let len = token.length;
         let d = f64::from_str(&source[start..start+len]).unwrap();
-        let ct = crate::value::ConstantType::NUMBER(d);
+        let ct = crate::value::ConstantType::FLOAT(d);
+
+        self.emit_constant(&mut chunk,
+                           token,
+                           ct)
+    }
+
+    fn int(&mut self,
+             mut chunk: &mut crate::chunk::Chunk,
+             token: &crate::scanner::Token,
+             source: &str) {
+        let start = token.start;
+        let len = token.length;
+        let d = i64::from_str(&source[start..start+len]).unwrap();
+        let ct = crate::value::ConstantType::INT(d);
 
         self.emit_constant(&mut chunk,
                            token,

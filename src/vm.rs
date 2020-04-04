@@ -34,19 +34,84 @@ macro_rules! read_byte {
 //     };
 // }
 
-// only numbers in binary ops
-macro_rules! binary_op {
-    ($vm:expr, $op:tt, $as_val:tt) => {{
-        if !(is_number!($vm.peek(0)) &&
-             is_number!($vm.peek(1))) {
-            runtime_error("Operands to binary ops must be numbers");
-            return InterpretResult::RuntimeError
-        }
-        let b = $vm.stack.pop().unwrap();
-        let a = $vm.stack.pop().unwrap();
-        $vm.stack.push($as_val!(as_number!(a) $op as_number!(b)));
+macro_rules! bool_op {
+    ($vm:expr, $op:tt) => {{
+
+        let l = $vm.stack.pop().unwrap();
+        let r = $vm.stack.pop().unwrap();
+
+        $vm.stack.push(
+            match (l, r) {
+                (crate::value::ValueType::INT(lv),
+                 crate::value::ValueType::INT(rv)) => {
+                    bool_val!(lv $op rv)
+                }
+
+                (crate::value::ValueType::FLOAT(lv),
+                 crate::value::ValueType::INT(rv)) => {
+                    bool_val!(lv $op (rv as f64))
+                }
+
+                (crate::value::ValueType::INT(lv),
+                 crate::value::ValueType::FLOAT(rv)) => {
+                    bool_val!((lv as f64) $op rv)
+                }
+                (crate::value::ValueType::FLOAT(lv),
+                 crate::value::ValueType::FLOAT(rv)) => {
+                    bool_val!(lv $op rv)
+                }
+                _ => {
+                    runtime_error("Operands to bool ops must be numbers");
+                    return InterpretResult::RuntimeError
+                }
+            }
+        );
     }};
 }
+
+// may push a float or an int
+macro_rules! number_op {
+    ($vm:expr, $op:tt) => {{
+        let l = $vm.peek(0);
+        let r = $vm.peek(1);
+
+        $vm.stack.push(
+            match (l, r) {
+                (crate::value::ValueType::INT(lv),
+                 crate::value::ValueType::INT(rv)) => {
+                    int_val!(lv $op rv)
+                }
+
+                (crate::value::ValueType::FLOAT(lv),
+                 crate::value::ValueType::INT(rv)) => {
+                    float_val!(lv $op (*rv as f64))
+                }
+
+                (crate::value::ValueType::INT(lv),
+                 crate::value::ValueType::FLOAT(rv)) => {
+                    float_val!((*lv as f64) $op rv)
+                }
+                (crate::value::ValueType::FLOAT(lv),
+                 crate::value::ValueType::FLOAT(rv)) => {
+                    float_val!(lv $op rv)
+                }
+                _ => {
+                    runtime_error("Operands to number ops must be numbers");
+                    return InterpretResult::RuntimeError
+                }
+            }
+        );
+        // if !(is_number!($vm.peek(0)) &&
+        //      is_number!($vm.peek(1))) {
+        //     runtime_error("Operands to binary ops must be numbers");
+        //     return InterpretResult::RuntimeError
+        // }
+        // let b = $vm.stack.pop().unwrap();
+        // let a = $vm.stack.pop().unwrap();
+        // $vm.stack.push($as_val!(as_number!(a) $op as_number!(b)));
+    }};
+}
+
 
 pub fn init_vm<'a>() -> VM<'a> {
     VM {
@@ -101,22 +166,25 @@ impl<'a> VM<'a> {
                     crate::value::print_value(&self.stack.pop().unwrap());
                     println!();
                     return InterpretResult::Ok },
+
+                // binary ops
                 Some(crate::chunk::Opcode::OPADD) =>
-                    binary_op!(self, +, number_val),
+                    number_op!(self, +),
                 Some(crate::chunk::Opcode::OPSUBTRACT) =>
-                    binary_op!(self, -, number_val),
+                    number_op!(self, -),
                 Some(crate::chunk::Opcode::OPMULTIPLY) =>
-                    binary_op!(self, *, number_val),
+                    number_op!(self, *),
                 Some(crate::chunk::Opcode::OPDIVIDE) =>
-                    binary_op!(self, /, number_val),
+                    number_op!(self, /),
                 Some(crate::chunk::Opcode::OPLT) =>
-                    binary_op!(self, <, bool_val),
+                    bool_op!(self, <),
                 Some(crate::chunk::Opcode::OPGT) =>
-                    binary_op!(self, >, bool_val),
+                    bool_op!(self, >),
                 Some(crate::chunk::Opcode::OPLTE) =>
-                    binary_op!(self, <=, bool_val),
+                    bool_op!(self, <=),
                 Some(crate::chunk::Opcode::OPGTE) =>
-                    binary_op!(self, >=, bool_val),
+                    bool_op!(self, >=),
+
                 Some(crate::chunk::Opcode::OPNOT) => {
                     let v = &self.stack.pop().unwrap();
                     self.stack.push(
@@ -125,8 +193,6 @@ impl<'a> VM<'a> {
                 },
                 Some(crate::chunk::Opcode::OPCONSTANT) => {
 
-
-                    //let constant = read_constant!(self, chunk);
                     // borrow a ConstantType from chunk
                     let constant = &chunk
                         .constants
@@ -136,8 +202,10 @@ impl<'a> VM<'a> {
                     // in the ConstantType. Push that onto our stack.
                     self.stack.push(
                         match constant {
-                            crate::value::ConstantType::NUMBER(n) =>
-                                crate::value::ValueType::NUMBER(*n),
+                            crate::value::ConstantType::INT(n) =>
+                                crate::value::ValueType::INT(*n),
+                            crate::value::ConstantType::FLOAT(n) =>
+                                crate::value::ValueType::FLOAT(*n),
                             crate::value::ConstantType::STRING(s) =>
                                 crate::value::ValueType::STRING(&s)
                         }
@@ -162,7 +230,7 @@ impl<'a> VM<'a> {
 
                     let v = match self.stack.pop().unwrap() {
                         crate::value::ValueType::STRING(s) => {
-                            crate::value::ValueType::NUMBER(s.len() as f64)
+                            crate::value::ValueType::INT(s.len() as i64)
                         },
                         _ => {
                             crate::value::ValueType::NIL
@@ -200,8 +268,10 @@ fn values_equal(l: &crate::value::ValueType,
          crate::value::ValueType::BOOL(rv)) => { lv == rv },
         (crate::value::ValueType::NIL,
          crate::value::ValueType::NIL) => true,
-        (crate::value::ValueType::NUMBER(lv),
-         crate::value::ValueType::NUMBER(rv)) => { lv == rv },
+        (crate::value::ValueType::INT(lv),
+         crate::value::ValueType::INT(rv)) => { lv == rv },
+        (crate::value::ValueType::FLOAT(lv),
+         crate::value::ValueType::FLOAT(rv)) => { lv == rv },
         (_,_) => false
     }
 
