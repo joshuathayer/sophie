@@ -1,5 +1,6 @@
 #[macro_use]
 
+#[derive(Debug)]
 pub enum ConstantType {
     INT(i64),
     FLOAT(f64),
@@ -7,6 +8,7 @@ pub enum ConstantType {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum ValueType<'a> {
     BOOL(bool),
     NIL,

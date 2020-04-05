@@ -11,6 +11,7 @@ mod scanner;
 
 use std::env;
 use std::fs;
+use std::collections::HashMap;
 
 extern crate num;
 
@@ -28,7 +29,8 @@ fn main() {
 
     let mut vm = crate::vm::VM {
        ip: 0,
-       stack: Vec::new(),
+        stack: Vec::new(),
+        symbols: HashMap::new()
     };
 
     let _res = run_file(&filename, &mut vm, &mut chunk);

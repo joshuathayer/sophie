@@ -1,10 +1,12 @@
 extern crate num_derive;
 use num::{FromPrimitive};
+use std::collections::{HashMap};
 
 pub struct VM<'a> {
     // pub chunk: Option<crate::chunk::Chunk>,
     pub ip: usize,
     pub stack: Vec<crate::value::ValueType<'a>>,
+    pub symbols: HashMap<&'a str, crate::value::ValueType<'a>>
 }
 
 pub enum InterpretResult {
@@ -109,6 +111,7 @@ pub fn init_vm<'a>() -> VM<'a> {
     VM {
         ip: 0,
         stack: Vec::new(),
+        symbols: HashMap::new()
     }
 }
 
@@ -236,6 +239,24 @@ impl<'a> VM<'a> {
 
                 Some(crate::chunk::Opcode::OPPOP) => {
                     self.stack.pop();
+                }
+
+                Some(crate::chunk::Opcode::OPDEF) => {
+                    let v = self.stack.pop().unwrap();
+                    let s = &self.stack.pop().unwrap();
+
+                    match s {
+                        crate::value::ValueType::STRING(sym) =>{
+                            self.symbols.insert(sym, v);
+                        }
+                        _ => {
+                            print!("Symbols must be strings\n")
+                        }
+                    }
+
+                    self.stack.push(
+                        crate::value::ValueType::NIL
+                    )
                 }
 
                 _ => return InterpretResult::CompileError,

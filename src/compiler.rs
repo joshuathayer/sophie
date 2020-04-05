@@ -509,7 +509,8 @@ impl Generator {
 
         let start = token.start;
         let len = token.length;
-        let s = source[start..start+len-1].to_owned();
+        // avoid "'s by dropping first and last char...
+        let s = source[start+1..start+len-1].to_owned();
 
         // let sv = string_val!(&ct);
         let ct = crate::value::ConstantType::STRING(s);
@@ -526,7 +527,7 @@ impl Generator {
 
         let start = token.start;
         let len = token.length;
-        let s = source[start..start+len-1].to_owned();
+        let s = source[start..start+len].to_owned();
 
         // let sv = string_val!(&ct);
         let ct = crate::value::ConstantType::STRING(s);
