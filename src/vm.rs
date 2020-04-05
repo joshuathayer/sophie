@@ -101,21 +101,12 @@ macro_rules! number_op {
                 }
             }
         );
-        // if !(is_number!($vm.peek(0)) &&
-        //      is_number!($vm.peek(1))) {
-        //     runtime_error("Operands to binary ops must be numbers");
-        //     return InterpretResult::RuntimeError
-        // }
-        // let b = $vm.stack.pop().unwrap();
-        // let a = $vm.stack.pop().unwrap();
-        // $vm.stack.push($as_val!(as_number!(a) $op as_number!(b)));
     }};
 }
 
 
 pub fn init_vm<'a>() -> VM<'a> {
     VM {
-        // chunk: Some(crate::chunk::init_chunk()),
         ip: 0,
         stack: Vec::new(),
     }
@@ -136,10 +127,6 @@ impl<'a> VM<'a> {
         self.run(chunk)
     }
 
-    // we move chunk to run, borrow stuff from within it, but then
-    // when run finishes, chunk gets cleaned up and we're no longer
-    // able to ref wiithin it.
-    // so... pass a ref to chunk?
     fn run(&'a mut self, chunk: &'a mut crate::chunk::Chunk) -> InterpretResult {
         loop {
             // debug
@@ -152,7 +139,6 @@ impl<'a> VM<'a> {
             println!("");
 
             crate::debug::disassemble_instruction(
-                // &self.chunk.as_ref().unwrap(),
                 &chunk,
                 self.ip);
 

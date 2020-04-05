@@ -218,7 +218,7 @@ type Action = fn(&mut Generator,
                  &crate::scanner::Token,
                  &str);
 
-static token_fn: [Action; 50] = [
+static token_fn: [Action; 51] = [
     Generator::noop,
 
     Generator::noop, Generator::noop,
@@ -234,7 +234,7 @@ static token_fn: [Action; 50] = [
     Generator::op, Generator::op,
 
     // Literals
-    Generator::noop, Generator::string,
+    Generator::identifier, Generator::string,
     Generator::float, Generator::int, Generator::noop,
     Generator::literal, Generator::literal,
     Generator::literal,
@@ -245,11 +245,14 @@ static token_fn: [Action; 50] = [
     Generator::noop, Generator::op, Generator::noop, Generator::noop,
     Generator::noop, Generator::noop, Generator::noop,
     Generator::noop, Generator::op, Generator::op,
+    Generator::op,
 
     Generator::noop,
     Generator::noop
 ];
 
+// works on the AST
+// pushes onto the bytecode in Chunk
 impl Generator {
 
     // we are given a node
@@ -265,26 +268,67 @@ impl Generator {
         match t {
 
             // a single token
+
+            // using match here isn't quire right, since it won't
+            // work with `((if true + -) 1 2)`. use an if.
             Some(token)
                 if token.typ != crate::scanner::TokenType::LEFTPAREN =>
                 { self.emit_token(&mut chunk, token, source)},
 
             // an S-expression
             _ => {
-                // careful, what happens with `()`?
                 let first_child = ast
                     .get(node.first_child().unwrap())
                     .unwrap();
 
-                // catch `if`, `cond`, other forms
+                // handle nonstandard forms
+                // match first_child.get().as_ref() {
+                //     Some(n) if n.typ == crate::scanner::TokenType::DEF => {
+                //         // ok it's a def. so we expect an identifier
+                //         // next, which we need in the symbol table...
+                //         // this should all be refactored into its own fn
+                //         let identifier =
+                //             ast
+                //             .get(first_child.next_sibling().unwrap())
+                //             .unwrap().get().as_ref().unwrap();
+
+                //         // this will stick a constant into the table
+                //         // and emit a const into the bytecode
+                //         // not sure that's what we want, since bytecode
+                //         // will end up like
+                //         // [ def, exp, symbol ] rather than
+                //         // [ def, symbol, exp ]
+                //         let ix = self.string(&mut chunk,
+                //                              &identifier,
+                //                              source);
+
+
+                //     }
+
+                // }
 
                 // otherwise assume we're in a prefix expression
                 // we generate operands, then operator
                 let mut next_child = first_child.next_sibling();
 
                 // catch semantic problems (arity, types?)
-
+                // example: `(def n)` vs `(def n 1)`
+                // should the first form default to nil?
+                // in thast case, this is probably the place to do it
+                // we'd need logic here to say "is `first` == DEF? if
+                // so, if `rest` is len 0, then emil a nil here. if
+                // `resst` is len 1, then emit its element. if `rest`
+                // is len > 1, it's an error"
+                // ~or~ we go fully variadic and emit the operand count
+                // here. or both- we'd have a table of op->arity:
+                //   + -> variadic
+                //   def -> [0,1]
+                //   not -> 1
+                // then here we know to check those bounds,
+                // and also if we should emit the argument count
+                // for now we say `def` will only every have 1 arg
                 loop {
+                    print!("next {:?}\n", next_child);
                     match next_child {
                         None => break,
                         Some(n) => {
@@ -370,6 +414,8 @@ impl Generator {
                 crate::chunk::Opcode::OPLEN,
             crate::scanner::TokenType::PRINT =>
                 crate::chunk::Opcode::OPPRINT,
+            crate::scanner::TokenType::DEF =>
+                crate::chunk::Opcode::OPDEF,
 
             _ =>
                 return
@@ -463,7 +509,7 @@ impl Generator {
 
         let start = token.start;
         let len = token.length;
-        let s = source[start+1..start+len-1].to_owned();
+        let s = source[start..start+len-1].to_owned();
 
         // let sv = string_val!(&ct);
         let ct = crate::value::ConstantType::STRING(s);
@@ -472,6 +518,24 @@ impl Generator {
                            token,
                            ct)
     }
+
+    fn identifier(&mut self,
+              mut chunk: &mut crate::chunk::Chunk,
+              token: &crate::scanner::Token,
+              source: &str) {
+
+        let start = token.start;
+        let len = token.length;
+        let s = source[start..start+len-1].to_owned();
+
+        // let sv = string_val!(&ct);
+        let ct = crate::value::ConstantType::STRING(s);
+
+        self.emit_constant(&mut chunk,
+                           token,
+                           ct)
+    }
+
 
     fn emit_constant(&mut self,
                      mut chunk: &mut crate::chunk::Chunk,
@@ -486,6 +550,7 @@ impl Generator {
                         token,
                         opcode!(OPCONSTANT),
                         constant_ix)
+
     }
 
     fn make_constant(&self,
@@ -493,17 +558,6 @@ impl Generator {
                      val: crate::value::ConstantType) -> u8 {
 
         let id = chunk.add_constant(val);
-        // let id = match val {
-        //     crate::value::ValueType::NUMBER(_) =>
-        //         //chunk.add_constant(as_number!(*val)),
-        //         chunk.add_constant(val),
-        //     crate::value::ValueType::STRING(_) =>
-        //         // chunk.add_constant(as_string!(*val)),
-        //         chunk.add_constant(val),
-        //     _ =>
-        //         chunk.add_constant(val),
-        // };
-
         u8::try_from(id).unwrap()
     }
 

@@ -35,6 +35,7 @@ pub enum TokenType {
     OR,  PRINT, RETURN, SUPER,
     THIS, VAR, WHILE,
     LET, NOT, LEN,
+    DEF,
 
     ERROR,
     EOF
@@ -53,6 +54,7 @@ fn init_token_trie() -> Trie<&'static str, TokenType> {
     trie.insert("true", TokenType::TRUE);
     trie.insert("not", TokenType::NOT);
     trie.insert("len", TokenType::LEN);
+    trie.insert("def", TokenType::DEF);
 
     trie
 }
@@ -86,9 +88,17 @@ pub fn init_scanner<'a>() -> Scanner<'a> {
 
 pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
     print!("scan token {:?}\n", scanner.start);
+
+    if (!is_at_end(scanner, source)) {
+    print!("in scan_token CHAR IS {:?}\n", peek(scanner, source));
+    }
     scanner.start = scanner.current;
 
     skip_whitespace(scanner, source);
+    if (!is_at_end(scanner, source)) {
+        print!("in scan_token2 CHAR IS {:?}\n", peek(scanner, source));
+    }
+
 
     if is_at_end(scanner, source) {
         return make_token(TokenType::EOF, &scanner);
@@ -140,7 +150,7 @@ pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
         },
         '"' => string(scanner, source),
         '0'..='9' => number(scanner, source),
-        'a'..='z' => identifier(scanner, source),
+        'a'..='z' => identifier(scanner, source), // symbol
         ':' => keyword(scanner, source),
         _   => error_token("Unexpected character.".to_string(), scanner)
     }
@@ -170,12 +180,13 @@ fn keyword(scanner: &mut Scanner, source: &str) -> Token {
 
 fn identifier(scanner: &mut Scanner, source: &str) -> Token {
 
-    advance(scanner, source); // move past first symbol
+    // advance(scanner, source); // move past first symbol
     loop {
         if is_at_end(scanner, source) {
             break;
         }
         let c = peek(scanner, source);
+        print!("in ID CHAR IS {:?}\n", c);
         match c {
             '0'..='9' => advance(scanner, source),
             'a'..='z' => advance(scanner, source),
@@ -184,7 +195,7 @@ fn identifier(scanner: &mut Scanner, source: &str) -> Token {
             _ => break
         };
     }
-
+    print!("OK FOUND IDENT {:?}\n", &source[scanner.start..scanner.current]);
     match scanner.tokens.get(&source[scanner.start..scanner.current]) {
         Some(token) => make_token(token.to_owned(), scanner),
         None => make_token(TokenType::IDENTIFIER, scanner)
@@ -295,7 +306,7 @@ fn is_at_end(scanner: &Scanner, source: &str) -> bool {
 }
 
 fn make_token(typ: TokenType, scanner: &Scanner) -> Token {
-    print!("Token {:?}\n", typ);
+    print!("Token {:?} current {:?} scart {:?}\n", typ, scanner.current, scanner.start);
     Token {
         typ: typ,
         line: scanner.line,
