@@ -85,6 +85,7 @@ pub fn init_scanner<'a>() -> Scanner<'a> {
 }
 
 pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
+    print!("scan token {:?}\n", scanner.start);
     scanner.start = scanner.current;
 
     skip_whitespace(scanner, source);
@@ -294,6 +295,7 @@ fn is_at_end(scanner: &Scanner, source: &str) -> bool {
 }
 
 fn make_token(typ: TokenType, scanner: &Scanner) -> Token {
+    print!("Token {:?}\n", typ);
     Token {
         typ: typ,
         line: scanner.line,

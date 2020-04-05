@@ -49,7 +49,20 @@ fn build_ast(mut parser: ASTParser,
         error: None})));
 
     ast_advance(&mut parser);
-    ast_expression(&mut parser, ast, root);
+
+    // because at the top level of a file there may be many expressions,
+    // we loop through them here until we hit the EOF. this is
+    // effectively a `do`
+    loop {
+        if &parser.current.as_ref().as_ref().unwrap().typ == &crate::scanner::TokenType::EOF {
+            break
+        }
+
+        // this does one s-expression
+        ast_expression(&mut parser, ast, root);
+        ast_advance(&mut parser);
+    }
+
     root
 }
 
@@ -86,6 +99,7 @@ fn ast_expression(parser: &mut ASTParser,
 
 pub fn ast_advance(parser: &mut ASTParser) {
     loop {
+        print!("Advance!\n");
 
         parser.current = Rc::new(
             Some(crate::scanner::scan_token(parser.scanner,
@@ -140,6 +154,7 @@ pub fn compile(source: &str,
                                 panic_mode: false,
                                 scanner: &mut scanner,
                                 source: source};
+
     let mut ast = Arena::<Rc<Option<crate::scanner::Token>>>::new();
     let root_id = build_ast(ast_parser, &mut ast);
     let root = ast.get(root_id);
@@ -149,12 +164,37 @@ pub fn compile(source: &str,
     let mut child = root.unwrap().first_child();
 
     loop {
+        print!("CHILD {:?}\n", child);
         match child {
             None => break,
             Some(n) => {
                 let node = ast.get(n).unwrap();
                 generator.expression(&ast, &node, &mut chunk, source);
                 child = node.next_sibling();
+
+                // tif there's more than one expression at the top of
+                // the AST, we want to eval each in turn (presumably
+                // they side-effect), and throw away each expression's
+                // value until the last one. so we tell the VM to pop
+                // into nothing.`do` will have to do similar.
+                // XXX also it's stupid how we pass a
+                // token all the way through to emit_* when all we
+                // really care about is the line number. fix this. and
+                // in this case (and `end_compiler`), just grab the
+                // value of the head of `chunk.lines` and use that
+                if child.is_some() {
+                    generator.emit_pop(&mut chunk,
+
+                                       // this token is a placeholder,
+                                       // see comment above
+                                       &crate::scanner::Token {
+                                           typ: crate::scanner::TokenType::NOOP,
+                                           line: 0,
+                                           start: 0,
+                                           length: 0,
+                                           error: None},
+                    )
+                }
             }
         }
     }
@@ -220,6 +260,8 @@ impl Generator {
                   source: &str) {
 
         let t = node.get().as_ref();
+
+        print!("t is {:?}\n", t);
         match t {
 
             // a single token
@@ -368,6 +410,15 @@ impl Generator {
                        token,
                        opcode!(OPRETURN))
     }
+
+    fn emit_pop(&mut self,
+                mut chunk: &mut crate::chunk::Chunk,
+                token: &crate::scanner::Token) {
+        self.emit_byte(&mut chunk,
+                       token,
+                       opcode!(OPPOP))
+    }
+
 
     fn noop(&mut self,
             mut _chunk: &mut crate::chunk::Chunk,

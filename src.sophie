@@ -1,2 +1,2 @@
-(print (= 2 2.0)) 
-(+ 10 (len "once in a while you can get shown the light, in the strangest of places if you look at it right"))
+(print "hello it is josh")
+(print (+ 1 2.2))

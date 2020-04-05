@@ -72,8 +72,8 @@ macro_rules! bool_op {
 // may push a float or an int
 macro_rules! number_op {
     ($vm:expr, $op:tt) => {{
-        let l = $vm.peek(0);
-        let r = $vm.peek(1);
+        let r = $vm.stack.pop().unwrap();
+        let l = $vm.stack.pop().unwrap();
 
         $vm.stack.push(
             match (l, r) {
@@ -84,12 +84,12 @@ macro_rules! number_op {
 
                 (crate::value::ValueType::FLOAT(lv),
                  crate::value::ValueType::INT(rv)) => {
-                    float_val!(lv $op (*rv as f64))
+                    float_val!(lv $op (rv as f64))
                 }
 
                 (crate::value::ValueType::INT(lv),
                  crate::value::ValueType::FLOAT(rv)) => {
-                    float_val!((*lv as f64) $op rv)
+                    float_val!((lv as f64) $op rv)
                 }
                 (crate::value::ValueType::FLOAT(lv),
                  crate::value::ValueType::FLOAT(rv)) => {
@@ -246,6 +246,10 @@ impl<'a> VM<'a> {
                     self.stack.push(
                         crate::value::ValueType::NIL
                     )
+                }
+
+                Some(crate::chunk::Opcode::OPPOP) => {
+                    self.stack.pop();
                 }
 
                 _ => return InterpretResult::CompileError,
