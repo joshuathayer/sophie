@@ -4,7 +4,8 @@
 pub enum ConstantType {
     INT(i64),
     FLOAT(f64),
-    STRING(String)
+    STRING(String),
+    SYMBOL(String)
 }
 
 #[derive(Debug)]
@@ -14,7 +15,8 @@ pub enum ValueType<'a> {
     NIL,
     FLOAT(f64),
     INT(i64),
-    STRING(&'a String)
+    STRING(&'a String),
+    SYMBOL(&'a String),
 }
 
 pub struct Values {
@@ -164,7 +166,8 @@ pub fn print_value(value: &ValueType) {
         ValueType::NIL => print!("nil"),
         ValueType::BOOL(b) =>
             if *b {print!("true")} else {print!("false")},
-        ValueType::STRING(_) => print!("{}", as_string!(*value))
+        ValueType::STRING(_) => print!("{}", as_string!(*value)),
+        ValueType::SYMBOL(_) => print!("{} (sym)", as_string!(*value))
     }
 
 }

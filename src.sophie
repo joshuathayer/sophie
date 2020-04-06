@@ -1,1 +1,4 @@
-(print "i")
+(def foo 10)
+(def bar 100)
+(def baz (+ foo bar))
+(print baz)

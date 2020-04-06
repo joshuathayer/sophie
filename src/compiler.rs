@@ -99,8 +99,6 @@ fn ast_expression(parser: &mut ASTParser,
 
 pub fn ast_advance(parser: &mut ASTParser) {
     loop {
-        print!("Advance!\n");
-
         parser.current = Rc::new(
             Some(crate::scanner::scan_token(parser.scanner,
                                             parser.source)));
@@ -164,7 +162,6 @@ pub fn compile(source: &str,
     let mut child = root.unwrap().first_child();
 
     loop {
-        print!("CHILD {:?}\n", child);
         match child {
             None => break,
             Some(n) => {
@@ -264,7 +261,6 @@ impl Generator {
 
         let t = node.get().as_ref();
 
-        print!("t is {:?}\n", t);
         match t {
 
             // a single token
@@ -282,76 +278,98 @@ impl Generator {
                     .unwrap();
 
                 // handle nonstandard forms
-                // match first_child.get().as_ref() {
-                //     Some(n) if n.typ == crate::scanner::TokenType::DEF => {
-                //         // ok it's a def. so we expect an identifier
-                //         // next, which we need in the symbol table...
-                //         // this should all be refactored into its own fn
-                //         let identifier =
-                //             ast
-                //             .get(first_child.next_sibling().unwrap())
-                //             .unwrap().get().as_ref().unwrap();
+                match first_child.get().as_ref() {
+                    Some(n) if n.typ == crate::scanner::TokenType::DEF => {
+                        // ok it's a def. so we expect an identifier
+                        // next.
+                        // `identifier` is a scanner::Token (and
+                        // should be of type IDENTIFIER)
+                        let sym_id = first_child
+                            .next_sibling().unwrap();
+                        let sym_node = ast.get(sym_id).unwrap();
 
-                //         // this will stick a constant into the table
-                //         // and emit a const into the bytecode
-                //         // not sure that's what we want, since bytecode
-                //         // will end up like
-                //         // [ def, exp, symbol ] rather than
-                //         // [ def, symbol, exp ]
-                //         let ix = self.string(&mut chunk,
-                //                              &identifier,
-                //                              source);
+                        let val_id = sym_node.next_sibling().unwrap();
+                        let val_node = ast.get(val_id).unwrap();
+
+                        // this is a scanner::Token
+                        let symbol = sym_node
+                            .get().as_ref().as_ref().unwrap();
+                        let start = symbol.start;
+                        let len = symbol.length;
+                        let s = source[start..start+len].to_owned();
+
+                        let ct = crate::value::ConstantType::SYMBOL(s);
+
+                        // emit the constant representing the symbol
+                        // (name) (and not op_constant!)
+
+                        // this just puts the constant in the constant
+                        // table and returns its index. does not add a
+                        // bytecode
+                        let ix = self.make_constant(&mut chunk,
+                                                    ct);
+
+                        self.emit_bytes(&mut chunk,
+                                        symbol,
+                                        opcode!(OPDEFSYM),
+                                        ix);
+
+                        // emit the value
+                        self.expression(ast, val_node,
+                                        &mut chunk, source);
+
+                        // emit the OP_DEF
+                        self.expression(ast, first_child,
+                                        &mut chunk, source);
+                    }
+                    _ => {
 
 
-                //     }
+                        // otherwise assume we're in a prefix expression
+                        // we generate operands, then operator
+                        let mut next_child = first_child.next_sibling();
 
-                // }
-
-                // otherwise assume we're in a prefix expression
-                // we generate operands, then operator
-                let mut next_child = first_child.next_sibling();
-
-                // catch semantic problems (arity, types?)
-                // example: `(def n)` vs `(def n 1)`
-                // should the first form default to nil?
-                // in thast case, this is probably the place to do it
-                // we'd need logic here to say "is `first` == DEF? if
-                // so, if `rest` is len 0, then emil a nil here. if
-                // `resst` is len 1, then emit its element. if `rest`
-                // is len > 1, it's an error"
-                // ~or~ we go fully variadic and emit the operand count
-                // here. or both- we'd have a table of op->arity:
-                //   + -> variadic
-                //   def -> [0,1]
-                //   not -> 1
-                // then here we know to check those bounds,
-                // and also if we should emit the argument count
-                // for now we say `def` will only every have 1 arg
-                loop {
-                    print!("next {:?}\n", next_child);
-                    match next_child {
-                        None => break,
-                        Some(n) => {
-                            let node = ast.get(n).unwrap();
-                            self.expression(ast,
-                                            &node,
-                                            &mut chunk,
-                                            source);
-                            next_child = node.next_sibling();
+                        // catch semantic problems (arity, types?)
+                        // example: `(def n)` vs `(def n 1)`
+                        // should the first form default to nil?
+                        // in thast case, this is probably the place to do it
+                        // we'd need logic here to say "is `first` == DEF? if
+                        // so, if `rest` is len 0, then emil a nil here. if
+                        // `resst` is len 1, then emit its element. if `rest`
+                        // is len > 1, it's an error"
+                        // ~or~ we go fully variadic and emit the operand count
+                        // here. or both- we'd have a table of op->arity:
+                        //   + -> variadic
+                        //   def -> [0,1]
+                        //   not -> 1
+                        // then here we know to check those bounds,
+                        // and also if we should emit the argument count
+                        // for now we say `def` will only every have 1 arg
+                        loop {
+                            match next_child {
+                                None => break,
+                                Some(n) => {
+                                    let node = ast.get(n).unwrap();
+                                    self.expression(ast,
+                                                    &node,
+                                                    &mut chunk,
+                                                    source);
+                                    next_child = node.next_sibling();
+                                }
+                            }
                         }
+
+                        // if our VM is to support variadic ops, we'd want
+                        // to push the count of operands here
+
+
+                        // finally, push on the operator
+                        self.expression(ast, first_child, &mut chunk, source);
                     }
                 }
-
-                // if our VM is to support variadic ops, we'd want
-                // to push the count of operands here
-
-
-                // finally, push on the operator
-                self.expression(ast, first_child, &mut chunk, source);
             }
-        }
 
-        ()
+        }
     }
 
     fn emit_token(&mut self,
@@ -529,14 +547,16 @@ impl Generator {
         let len = token.length;
         let s = source[start..start+len].to_owned();
 
-        // let sv = string_val!(&ct);
-        let ct = crate::value::ConstantType::STRING(s);
+        let ct = crate::value::ConstantType::SYMBOL(s);
 
-        self.emit_constant(&mut chunk,
-                           token,
-                           ct)
+        let constant_ix = self.make_constant(&mut chunk,
+                                             ct);
+
+        self.emit_bytes(&mut chunk,
+                        token,
+                        opcode!(OPSYM),
+                        constant_ix)
     }
-
 
     fn emit_constant(&mut self,
                      mut chunk: &mut crate::chunk::Chunk,

@@ -87,18 +87,9 @@ pub fn init_scanner<'a>() -> Scanner<'a> {
 }
 
 pub fn scan_token(scanner: &mut Scanner, source: &str) -> Token {
-    print!("scan token {:?}\n", scanner.start);
 
-    if (!is_at_end(scanner, source)) {
-    print!("in scan_token CHAR IS {:?}\n", peek(scanner, source));
-    }
     scanner.start = scanner.current;
-
     skip_whitespace(scanner, source);
-    if (!is_at_end(scanner, source)) {
-        print!("in scan_token2 CHAR IS {:?}\n", peek(scanner, source));
-    }
-
 
     if is_at_end(scanner, source) {
         return make_token(TokenType::EOF, &scanner);
@@ -186,7 +177,6 @@ fn identifier(scanner: &mut Scanner, source: &str) -> Token {
             break;
         }
         let c = peek(scanner, source);
-        print!("in ID CHAR IS {:?}\n", c);
         match c {
             '0'..='9' => advance(scanner, source),
             'a'..='z' => advance(scanner, source),
@@ -195,7 +185,7 @@ fn identifier(scanner: &mut Scanner, source: &str) -> Token {
             _ => break
         };
     }
-    print!("OK FOUND IDENT {:?}\n", &source[scanner.start..scanner.current]);
+
     match scanner.tokens.get(&source[scanner.start..scanner.current]) {
         Some(token) => make_token(token.to_owned(), scanner),
         None => make_token(TokenType::IDENTIFIER, scanner)
@@ -306,7 +296,7 @@ fn is_at_end(scanner: &Scanner, source: &str) -> bool {
 }
 
 fn make_token(typ: TokenType, scanner: &Scanner) -> Token {
-    print!("Token {:?} current {:?} scart {:?}\n", typ, scanner.current, scanner.start);
+
     Token {
         typ: typ,
         line: scanner.line,

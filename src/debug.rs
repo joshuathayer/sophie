@@ -44,6 +44,8 @@ pub fn disassemble_instruction(ref ch: &crate::chunk::Chunk, offset: usize) -> u
         Some(crate::chunk::Opcode::OPPRINT) => simple_instruction("OP_PRINT",  offset),
         Some(crate::chunk::Opcode::OPPOP) => simple_instruction("OP_POP",  offset),
         Some(crate::chunk::Opcode::OPDEF) => simple_instruction("OP_DEF",  offset),
+        Some(crate::chunk::Opcode::OPDEFSYM) => simple_instruction("OP_DEFSYM",  offset),
+        Some(crate::chunk::Opcode::OPSYM) => simple_instruction("OP_SYM",  offset),
 
         _ => simple_instruction("UNKNOWN OPCODE", offset),
     }
@@ -67,7 +69,9 @@ fn constant_instruction(name: &str,
         crate::value::ConstantType::FLOAT(n) =>
             crate::value::ValueType::FLOAT(*n),
         crate::value::ConstantType::STRING(s) =>
-            crate::value::ValueType::STRING(s)
+            crate::value::ValueType::STRING(s),
+        crate::value::ConstantType::SYMBOL(s) =>
+            crate::value::ValueType::SYMBOL(s)
     };
 
     crate::value::print_value(&vt);

@@ -6,7 +6,7 @@ pub struct VM<'a> {
     // pub chunk: Option<crate::chunk::Chunk>,
     pub ip: usize,
     pub stack: Vec<crate::value::ValueType<'a>>,
-    pub symbols: HashMap<&'a str, crate::value::ValueType<'a>>
+    pub symbols: HashMap<String, crate::value::ValueType<'a>>
 }
 
 pub enum InterpretResult {
@@ -180,6 +180,25 @@ impl<'a> VM<'a> {
                         crate::value::ValueType::BOOL(is_falsey(v))
                     )
                 },
+                Some(crate::chunk::Opcode::OPSYM) => {
+                    let constant = &chunk
+                        .constants
+                        .values[read_byte!(self, chunk) as usize];
+
+                    let s = match constant {
+                        crate::value::ConstantType::SYMBOL(sym) =>{
+                            Some(sym)
+                        }
+                        _ => {
+                            print!("Symbols must be symbols\n");
+                            None
+                        }
+                    };
+
+                    let v = self.symbols.get(&s.unwrap().to_string());
+                    self.stack.push(v.unwrap().to_owned())
+
+                }
                 Some(crate::chunk::Opcode::OPCONSTANT) => {
 
                     // borrow a ConstantType from chunk
@@ -196,7 +215,11 @@ impl<'a> VM<'a> {
                             crate::value::ConstantType::FLOAT(n) =>
                                 crate::value::ValueType::FLOAT(*n),
                             crate::value::ConstantType::STRING(s) =>
-                                crate::value::ValueType::STRING(&s)
+                                crate::value::ValueType::STRING(&s),
+                            crate::value::ConstantType::SYMBOL(s) => {
+                                crate::value::ValueType::SYMBOL(&s)
+                            }
+
                         }
                     );
 
@@ -242,21 +265,38 @@ impl<'a> VM<'a> {
                 }
 
                 Some(crate::chunk::Opcode::OPDEF) => {
+
                     let v = self.stack.pop().unwrap();
                     let s = &self.stack.pop().unwrap();
 
                     match s {
-                        crate::value::ValueType::STRING(sym) =>{
-                            self.symbols.insert(sym, v);
+                        crate::value::ValueType::SYMBOL(sym) =>{
+                            self.symbols.insert(sym.to_owned().to_string(), v);
                         }
                         _ => {
-                            print!("Symbols must be strings\n")
+                            print!("Symbols must be symbols\n")
                         }
                     }
 
                     self.stack.push(
                         crate::value::ValueType::NIL
                     )
+                }
+
+                Some(crate::chunk::Opcode::OPDEFSYM) => {
+
+                    let sym_const = &chunk
+                        .constants
+                        .values[read_byte!(self, chunk) as usize];
+
+                    let sym = match sym_const {
+                        crate::value::ConstantType::SYMBOL(s) =>
+                            Some(s),
+                        _ => None
+                    };
+
+                    self.stack.push(
+                        crate::value::ValueType::SYMBOL(sym.unwrap()));
                 }
 
                 _ => return InterpretResult::CompileError,
