@@ -279,6 +279,74 @@ impl Generator {
 
                 // handle nonstandard forms
                 match first_child.get().as_ref() {
+                    Some(n) if n.typ == crate::scanner::TokenType::IF => {
+                        // ok it's an if
+                        // initially, no else clause
+                        // conditional AST node
+                        let mut conditional_id = first_child
+                            .next_sibling().unwrap();
+                        let conditional_node = ast.get(conditional_id).unwrap();
+
+                        // `true` branch AST node
+                        let true_id = conditional_node.next_sibling().unwrap();
+                        let true_node = ast.get(true_id).unwrap();
+
+                        // add the conditional code
+                        self.expression(ast, conditional_node,
+                                        &mut chunk, source);
+
+                        // add `if` opcode
+                        self.emit_byte(chunk,
+                                       t.as_ref().unwrap(),
+                                       crate::chunk::Opcode::to_u8(&crate::chunk::Opcode::OPJMPIFFALSE).unwrap());
+
+                        // placeholder for jmp location. this will be patched
+                        // and should be two bytes at least XXX
+                        self.emit_byte(chunk, t.as_ref().unwrap(), 0);
+                        let patch_loc = chunk.code.len();
+
+                        // add the `true` branch
+                        self.expression(ast, true_node,
+                                        &mut chunk, source);
+
+                        // we want to jump to after the else branch so
+                        // emit a JMP here, and a placeholder
+                        // location.  we'll patch this after we know
+                        // the length of the else branch. as above
+                        // this should be longer than a single byte
+                        self.emit_byte(chunk,
+                                       t.as_ref().unwrap(),
+                                       crate::chunk::Opcode::to_u8(&crate::chunk::Opcode::OPJMP).unwrap());
+                        self.emit_byte(chunk, t.as_ref().unwrap(), 0);
+                        let else_patch_loc = chunk.code.len();
+
+                        // now go back and patch the jmpif location
+                        // (this is where we end up if the cond fails-
+                        // just in front of the else branch)
+                        chunk.code[patch_loc-1] = (chunk.code.len() as u8);
+
+                        match true_node.next_sibling() {
+                            Some(id) => {
+                                print!("Looks like i have an else!\n");
+                                let else_node = ast.get(id).unwrap();
+                                self.expression(ast, else_node,
+                                                &mut chunk, source);
+                            }
+                            None => {
+                                print!("Looks like i do not have an else!\n");
+                                // no else clause, but we need to push
+                                // a value regardless
+                                self.emit_byte(chunk,
+                                               t.as_ref().unwrap(),
+                                               crate::chunk::Opcode::to_u8(&crate::chunk::Opcode::OPNIL).unwrap())
+                            }
+                        }
+
+                        // go back and patch the jmp before the else
+                        chunk.code[else_patch_loc-1] = chunk.code.len() as u8;
+
+
+                    },
                     Some(n) if n.typ == crate::scanner::TokenType::DEF => {
                         // ok it's a def. so we expect an identifier
                         // next.
@@ -309,6 +377,9 @@ impl Generator {
                         let ix = self.make_constant(&mut chunk,
                                                     ct);
 
+                        // the VM will replace the symbol's name with
+                        // the symbol's constant index on the stack,
+                        // since op_def operates on that
                         self.emit_bytes(&mut chunk,
                                         symbol,
                                         opcode!(OPDEFSYM),

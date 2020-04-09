@@ -21,8 +21,10 @@ pub enum Opcode {
     OPPRINT,
     OPPOP,
     OPDEF,
-    OPDEFSYM,  // use sym  while defining
+    OPDEFSYM,  // use sym while defining
     OPSYM,     // resolve sym
+    OPJMPIFFALSE,
+    OPJMP,
 }
 
 pub struct Chunk {

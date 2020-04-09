@@ -46,6 +46,8 @@ pub fn disassemble_instruction(ref ch: &crate::chunk::Chunk, offset: usize) -> u
         Some(crate::chunk::Opcode::OPDEF) => simple_instruction("OP_DEF",  offset),
         Some(crate::chunk::Opcode::OPDEFSYM) => simple_instruction("OP_DEFSYM",  offset),
         Some(crate::chunk::Opcode::OPSYM) => simple_instruction("OP_SYM",  offset),
+        Some(crate::chunk::Opcode::OPJMPIFFALSE) => simple_instruction("OP_JMPIFFALSE",  offset),
+        Some(crate::chunk::Opcode::OPJMP) => simple_instruction("OP_JMP",  offset),
 
         _ => simple_instruction("UNKNOWN OPCODE", offset),
     }

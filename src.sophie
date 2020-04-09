@@ -1,4 +1,1 @@
-(def foo 10)
-(def bar 100)
-(def baz (+ foo bar))
-(print baz)
+(if (> (+ 1 2) (- 2 3)) (print "i was true") (print "i was false"))

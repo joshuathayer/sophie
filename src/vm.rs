@@ -28,14 +28,6 @@ macro_rules! read_byte {
     }};
 }
 
-// macro_rules! read_constant {
-//     ($vm:expr, $chunk:expr) => {
-//         &$chunk
-//             .constants
-//             .values[read_byte!($vm, $chunk) as usize]
-//     };
-// }
-
 macro_rules! bool_op {
     ($vm:expr, $op:tt) => {{
 
@@ -197,8 +189,7 @@ impl<'a> VM<'a> {
 
                     let v = self.symbols.get(&s.unwrap().to_string());
                     self.stack.push(v.unwrap().to_owned())
-
-                }
+                },
                 Some(crate::chunk::Opcode::OPCONSTANT) => {
 
                     // borrow a ConstantType from chunk
@@ -265,7 +256,6 @@ impl<'a> VM<'a> {
                 }
 
                 Some(crate::chunk::Opcode::OPDEF) => {
-
                     let v = self.stack.pop().unwrap();
                     let s = &self.stack.pop().unwrap();
 
@@ -299,12 +289,25 @@ impl<'a> VM<'a> {
                         crate::value::ValueType::SYMBOL(sym.unwrap()));
                 }
 
+
+                Some(crate::chunk::Opcode::OPJMPIFFALSE) => {
+                    let jmp_to = read_byte!(self, chunk);
+
+                    let cond = &self.stack.pop().unwrap();
+                    if (is_falsey(cond)) {
+                        self.ip = jmp_to as usize;
+                    }
+                }
+
+                Some(crate::chunk::Opcode::OPJMP) => {
+                    let jmp_to = read_byte!(self, chunk);
+                    self.ip = jmp_to as usize;
+                }
+
                 _ => return InterpretResult::CompileError,
             }
-
         }
     }
-    // chunk.constants.values dropped here while still borrowed...
 }
 
 fn is_falsey(v: &crate::value::ValueType) -> bool {
