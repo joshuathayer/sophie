@@ -171,7 +171,6 @@ fn keyword(scanner: &mut Scanner, source: &str) -> Token {
 
 fn identifier(scanner: &mut Scanner, source: &str) -> Token {
 
-    // advance(scanner, source); // move past first symbol
     loop {
         if is_at_end(scanner, source) {
             break;

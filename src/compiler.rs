@@ -30,12 +30,33 @@ fn init_generator() -> Generator {
 }
 
 #[derive(Debug)]
+pub struct Compiler<'a> {
+    pub local_count: u8,
+    pub scope_depth: u8,
+    pub locals: Vec<Local<'a>>
+}
+
+#[derive(Debug)]
+pub struct Local<'a> {
+    pub depth: u8,
+    pub name: &'a crate::scanner::Token
+}
+
+#[derive(Debug)]
 pub struct ASTParser<'a> {
     pub current: Rc<Option<crate::scanner::Token>>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scanner: &'a mut crate::scanner::Scanner<'a>,
     pub source: &'a str,
+}
+
+
+fn begin_scope(compiler: &mut Compiler) {
+    compiler.scope_depth += 1
+}
+fn end_scope(compiler: &mut Compiler) {
+    compiler.scope_depth -= 1
 }
 
 fn build_ast(mut parser: ASTParser,
@@ -127,21 +148,21 @@ fn ast_error_at_current(parser: &mut ASTParser,
 fn ast_error_at(parser: &mut ASTParser,
                 message: String,
                 source: &str) {
-        let token = parser.current.as_ref().as_ref().unwrap();
+    let token = parser.current.as_ref().as_ref().unwrap();
 
-        print!("[line {}] Error", token.line);
-        if token.typ == crate::scanner::TokenType::EOF {
-            print!(" at end");
-        } else if token.typ == crate::scanner::TokenType::ERROR {
-            print!("");
-        } else {
-            print!(" at '{}'",
-                   &source[token.start..token.start+token.length]);
-        }
-        println!(": {}", message);
+    print!("[line {}] Error", token.line);
+    if token.typ == crate::scanner::TokenType::EOF {
+        print!(" at end");
+    } else if token.typ == crate::scanner::TokenType::ERROR {
+        print!("");
+    } else {
+        print!(" at '{}'",
+               &source[token.start..token.start+token.length]);
     }
+    println!(": {}", message);
+}
 
-// take source, build a Chunk
+// take source, build a Chunk of bytecode
 pub fn compile(source: &str,
                mut chunk: &mut crate::chunk::Chunk) -> bool {
 
@@ -280,8 +301,6 @@ impl Generator {
                 // handle nonstandard forms
                 match first_child.get().as_ref() {
                     Some(n) if n.typ == crate::scanner::TokenType::IF => {
-                        // ok it's an if
-                        // initially, no else clause
                         // conditional AST node
                         let mut conditional_id = first_child
                             .next_sibling().unwrap();
@@ -311,7 +330,7 @@ impl Generator {
 
                         // we want to jump to after the else branch so
                         // emit a JMP here, and a placeholder
-                        // location.  we'll patch this after we know
+                        // location. we'll patch this after we know
                         // the length of the else branch. as above
                         // this should be longer than a single byte
                         self.emit_byte(chunk,
@@ -323,17 +342,15 @@ impl Generator {
                         // now go back and patch the jmpif location
                         // (this is where we end up if the cond fails-
                         // just in front of the else branch)
-                        chunk.code[patch_loc-1] = (chunk.code.len() as u8);
+                        chunk.code[patch_loc-1] = chunk.code.len() as u8;
 
                         match true_node.next_sibling() {
                             Some(id) => {
-                                print!("Looks like i have an else!\n");
                                 let else_node = ast.get(id).unwrap();
                                 self.expression(ast, else_node,
                                                 &mut chunk, source);
                             }
                             None => {
-                                print!("Looks like i do not have an else!\n");
                                 // no else clause, but we need to push
                                 // a value regardless
                                 self.emit_byte(chunk,
@@ -347,13 +364,46 @@ impl Generator {
 
 
                     },
+                    Some(n) if n.typ == crate::scanner::TokenType::LET => {
+                        // (let [a (+ 1 2) b 7] (+ a b))
+                        // at this point, the AST does not know
+                        // anything about lists or vecs, so we march
+                        // symbolwise through `let` bindings
+                        // XXX probably we should parse lists, vecs,
+                        // and dicts into the AST.
+
+                        // first read the open bracket
+                        let mut next_id = first_child.next_sibling().unwrap();
+                        let mut next_node = ast.get(next_id).unwrap();
+                        // XXX assert that was actually a bracket
+
+                        // work through the bindings
+                        next_id = next_node.next_sibling().unwrap();
+                        next_node = ast.get(next_id).unwrap();
+                        let mut i = 0;
+                        loop {
+                            // first element of binding form, symbol
+                            // (or close square bracket)
+                            let t = node.get().as_ref();
+                            match t {
+                                Some(t) if t.typ == crate::scanner::TokenType::RIGHTBRACKET => break,
+                                Some(t) if t.typ == crate::scanner::TokenType::IDENTIFIER => {
+
+                                    // good, it's a symbol
+                                    // search locals for symbol. if it's there at current depth, error (can't rebind).
+                                    // if it's not, append to locals list. take
+                                    break;
+                                }
+
+                            }
+                        }
+                    },
                     Some(n) if n.typ == crate::scanner::TokenType::DEF => {
                         // ok it's a def. so we expect an identifier
                         // next.
                         // `identifier` is a scanner::Token (and
                         // should be of type IDENTIFIER)
-                        let sym_id = first_child
-                            .next_sibling().unwrap();
+                        let sym_id = first_child.next_sibling().unwrap();
                         let sym_node = ast.get(sym_id).unwrap();
 
                         let val_id = sym_node.next_sibling().unwrap();
